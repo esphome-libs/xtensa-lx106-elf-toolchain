@@ -1,0 +1,240 @@
+name: Build
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
+env:
+  VERSION: ${{ github.ref_type == 'tag' && github.ref_name || 'dev' }}
+  REGISTRY_URL: https://dl.registry.platformio.org/download/platformio/tool/toolchain-xtensa/2.100300.220621/toolchain-xtensa-linux_x86_64-2.100300.220621.tar.gz
+  REGISTRY_SHA256: a3d51bebcfaa2f5cca154956fee3e9270b6d0e9c5d51de6034a86aaa606ea8a5
+
+jobs:
+  sources:
+    name: Prepare sources
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq autoconf automake libtool patch
+      - name: Fetch and patch
+        run: ci/prepare-sources.sh
+      - name: Pack
+        run: tar -czf sources.tar.gz src
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sources
+          path: sources.tar.gz
+          retention-days: 3
+
+  linux_x86_64:
+    name: Build linux_x86_64 and device libraries
+    needs: sources
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: sources
+      - name: Unpack sources
+        run: tar -xzf sources.tar.gz && rm sources.tar.gz
+      - name: Set archive time
+        run: echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
+      - name: Build and package
+        run: >
+          ci/container.sh bash -c
+          "ci/build.sh linux_x86_64 host device &&
+          ci/package.sh device &&
+          ci/package.sh linux_x86_64"
+      - name: Show logs
+        if: failure()
+        run: tail -n 100 logs/*/*.log
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: device
+          path: device.tar.gz
+          retention-days: 3
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: package-linux_x86_64
+          path: |
+            toolchain-xtensa-lx106-elf-*.tar.gz
+            toolchain-xtensa-lx106-elf-*.tar.gz.sha256
+
+  host:
+    name: Build ${{ matrix.system }}
+    needs: [sources, linux_x86_64]
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: linux_aarch64
+            runner: ubuntu-24.04-arm
+            container: true
+          - system: windows_amd64
+            runner: ubuntu-24.04
+            container: true
+            # gcc's configure probes the assembler and cannot run Windows programs
+            build_toolchain: true
+            packages: g++-mingw-w64-x86-64
+          - system: darwin_arm64
+            runner: macos-15
+          - system: darwin_x86_64
+            runner: macos-15-intel
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: sources
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: device
+      - name: Unpack sources
+        run: tar -xzf sources.tar.gz && rm sources.tar.gz
+      - name: Set archive time
+        run: echo "SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        if: matrix.build_toolchain
+        with:
+          name: package-linux_x86_64
+          path: build-toolchain-archive
+      - name: Unpack toolchain for the build machine
+        if: matrix.build_toolchain
+        run: |
+          mkdir build-toolchain
+          tar -xzf build-toolchain-archive/*.tar.gz -C build-toolchain
+          echo "BUILD_TOOLCHAIN=$PWD/build-toolchain" >> "$GITHUB_ENV"
+      - name: Build and package in container
+        if: matrix.container
+        env:
+          EXTRA_PACKAGES: ${{ matrix.packages }}
+        run: >
+          ci/container.sh bash -c
+          "ci/build.sh ${{ matrix.system }} host &&
+          ci/package.sh ${{ matrix.system }}"
+      - name: Build and package
+        if: ${{ !matrix.container }}
+        run: |
+          ci/build.sh ${{ matrix.system }} host
+          ci/package.sh ${{ matrix.system }}
+      - name: Show logs
+        if: failure()
+        run: tail -n 100 logs/*/*.log
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: package-${{ matrix.system }}
+          path: |
+            toolchain-xtensa-lx106-elf-*.tar.gz
+            toolchain-xtensa-lx106-elf-*.tar.gz.sha256
+
+  reference:
+    name: Compare with registry package
+    needs: linux_x86_64
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: package-linux_x86_64
+      - name: Fetch registry package
+        run: |
+          curl -fsSL --retry 5 -o registry.tar.gz "$REGISTRY_URL"
+          echo "$REGISTRY_SHA256  registry.tar.gz" | sha256sum -c
+          mkdir registry toolchain
+          tar -xzf registry.tar.gz -C registry
+          tar -xzf toolchain-xtensa-lx106-elf-*-linux_x86_64.tar.gz -C toolchain
+      - name: Checksums from the registry compiler
+        run: ci/verify.sh registry reference.sha256
+      - name: Compare device libraries and headers
+        run: ci/compare-device.sh registry toolchain
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: reference
+          path: reference.sha256
+          retention-days: 3
+
+  verify:
+    name: Verify ${{ matrix.system }}
+    needs: [host, reference]
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: linux_x86_64
+            runner: ubuntu-24.04
+          - system: linux_aarch64
+            runner: ubuntu-24.04-arm
+          - system: darwin_arm64
+            runner: macos-15
+          - system: darwin_x86_64
+            runner: macos-15-intel
+          - system: windows_amd64
+            runner: windows-2025
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: package-${{ matrix.system }}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: reference
+      - name: Check archive checksum and unpack
+        run: |
+          if command -v sha256sum >/dev/null; then
+            sha256sum -c toolchain-xtensa-lx106-elf-*.tar.gz.sha256
+          else
+            shasum -a 256 -c toolchain-xtensa-lx106-elf-*.tar.gz.sha256
+          fi
+          mkdir toolchain
+          tar -xzf toolchain-xtensa-lx106-elf-*.tar.gz -C toolchain
+      - name: Show host programs
+        run: |
+          file toolchain/bin/xtensa-lx106-elf-gcc* | head -3
+          toolchain/bin/xtensa-lx106-elf-gcc -v
+      - name: Compile and link tests
+        run: ci/verify.sh toolchain result.sha256
+      - name: Compare with registry compiler
+        run: diff reference.sha256 result.sha256
+
+  release:
+    name: Release
+    if: github.ref_type == 'tag'
+    needs: verify
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: package-*
+          merge-multiple: true
+      - name: Collect checksums
+        run: |
+          cat toolchain-xtensa-lx106-elf-*.tar.gz.sha256 > sha256sums.txt
+          rm toolchain-xtensa-lx106-elf-*.tar.gz.sha256
+          sha256sum -c sha256sums.txt
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          flags=()
+          case "$TAG" in *rc*) flags+=(--prerelease) ;; esac
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "$TAG" \
+            --notes "GCC 10.3 for xtensa-lx106-elf. Checksums are in sha256sums.txt." \
+            "${flags[@]}" toolchain-xtensa-lx106-elf-*.tar.gz sha256sums.txt

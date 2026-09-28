@@ -1,0 +1,2 @@
+# Sources must reach the compiler with the same bytes on every host
+* -text
