@@ -41,6 +41,10 @@ no build of that package runs on arm64 macOS without Rosetta 2.
 | hal | [earlephilhower/lx106-hal](https://github.com/earlephilhower/lx106-hal) commit `e4bcc63c` |
 | gmp, mpfr, mpc, isl | 6.1.0, 3.1.4, 1.0.3, 0.18 |
 
+The hal library is built with `mawk`. Its build splits some sources into one
+object per function using a pattern only GNU awk understands; the registry
+package was built with `mawk`, which skips the split.
+
 The newlib commit is not the newest one. It is the one the libraries and
 headers of the registry package match; a newer commit changes 15 objects in
 libc and the `sys/pgmspace.h` header.

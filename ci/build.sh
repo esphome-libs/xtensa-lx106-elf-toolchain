@@ -176,8 +176,12 @@ stage_hal() {
   for a in "${CONFIGURE[@]}"; do
     case $a in --host=*) ;; *) args+=("$a") ;; esac
   done
-  # Device code: compiled without an optimisation flag to match 2.100300.220621
-  CFLAGS="-pipe" LDFLAGS="" "$SRC/lx106-hal/configure" --host=xtensa-lx106-elf "${args[@]}"
+  # Device code: compiled without an optimisation flag to match 2.100300.220621.
+  # hal splits some sources into one object per function with a pattern only
+  # GNU awk understands. 2.100300.220621 was built with mawk, which skips
+  # the split and leaves 13 objects; GNU awk would produce 126.
+  CFLAGS="-pipe" LDFLAGS="" AWK=mawk \
+    "$SRC/lx106-hal/configure" --host=xtensa-lx106-elf "${args[@]}"
   make -j"$JOBS"
   make install
 }

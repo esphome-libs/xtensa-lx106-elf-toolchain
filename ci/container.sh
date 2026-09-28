@@ -24,7 +24,7 @@ docker run --rm \
     apt-get update -qq >/dev/null
     # shellcheck disable=SC2086
     apt-get install -y -qq --no-install-recommends \
-      build-essential bison flex gawk file ca-certificates ${EXTRA_PACKAGES:-} >/dev/null
+      build-essential bison flex mawk file ca-certificates ${EXTRA_PACKAGES:-} >/dev/null
     # Leave the files owned by the user outside the container, also on failure
     trap "chown -R $OWNER ." EXIT
     "$@"
