@@ -1,0 +1,9 @@
+verify-work/
+src/
+build/
+install/
+pkg/
+logs/
+*.tar.gz
+*.sha256
+.DS_Store
