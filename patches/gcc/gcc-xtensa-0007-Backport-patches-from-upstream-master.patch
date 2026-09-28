@@ -1,0 +1,3186 @@
+From 989fc2c516206d7cf70177a416815f91998e2131 Mon Sep 17 00:00:00 2001
+From: Takayuki 'January June' Suwa <jjsuwa_sys3175@yahoo.co.jp>
+Date: Fri, 27 May 2022 21:34:37 +0900
+Subject: [PATCH 1/3] xtensa: Backport patches from upstream/master
+
+2b5b8610e985e23a0c2e0272339ab074a750e240 "xtensa: Fix non-robust split condition in define_insn_and_split"
+7e5baa7e6f4caced6bdaef6d866d19e7656d8a16 "xtensa: fix -Wformat-diag warnings."
+d543bac1631700f0da30d5ca555296f4938a82c6 "xtensa: Rename deprecated extv/extzv insn patterns to extvsi/extzvsi"
+112447f8564c0307c5da99a4094a3a99f204239f "xtensa: Reflect the 32-bit Integer Divide Option"
+b753405a5f0d45eea97f4cc7df2c2089401b08bf "xtensa: Simplify EXTUI instruction maskimm validations"
+9b251fe2e39a49c0d3ecd34cf8c5d55544efd159 "xtensa: Make use of IN_RANGE macro where appropriate"
+3397563ad6c8fc5d9675faf507e52dd2ed284202 "xtensa: Fix instruction counting regarding block move expansion"
+6454b4a8f5d90dd355c3c7e31a592a439223b645 "xtensa: Add setmemsi insn pattern"
+9aad2b22436d5346fa224e5c14439dcef36cf3dd "xtensa: Improve bswap[sd]i2 insn patterns"
+e94c6dbfb57a862dd8a8685eabc4886ad1aaea25 "xtensa: fix PR target/105879"
+2fcc69d8ce4eddf6dea878a5383254d366e1bb14 "xtensa: Implement bswaphi2 insn pattern"
+9777d446e2148ef9a6e9f35db3f4eab99ee8812c "xtensa: Make one_cmplsi2 optimizer-friendly"
+e44e7face13f38f9b228e2619786ba0add9ef77b "xtensa: Optimize '(~x & y)' to '((x & y) ^ y)'"
+29dc90a580bf45f503ed89eb1dc63b5676db776b "xtensa: Add clrsbsi2 insn pattern"
+9489a1ab05ad1bda7126da5513f08282da3e531d "xtensa: Tweak some widen multiplications"
+fddf0e1057fe24eff0d894fbc2959b4086464a96 "xtensa: Consider the Loop Option when setmemsi is expanded to small loop"
+ccd02e734e0f1742629403b46e5b1c650b00fd65 "xtensa: Improve instruction cost estimation and suggestion"
+cd02f15f1aecc45b2c2feae16840503549508619 "xtensa: Improve constant synthesis for both integer and floating-point"
+1c68ec1f8ab531fba56cccf549ffe592bf622821 "xtensa: Improve shift operations more"
+e1b193c1cce3a975a9ed60dd0f30182fe0255d7c "xtensa: Simplify conditional branch/move insn patterns"
+70ce04ca353bb0cda8321b91a77c2477e26d339b "xtensa: Make use of BALL/BNALL instructions"
+077438933cf94f00cc5edf974338c11ba4bf7a39 "xtensa: Optimize bitwise AND operation with some specific forms of constants"
+96518f714e3fab53a966a05b8d48011e27c1a718 "xtensa: Document new -mextra-l32r-costs= Xtensa-specific option"
+43b0c56fda4bc990e8ee8d6a0b376de7b663bb06 "xtensa: Add support for sibling call optimization"
+c95e307e3a978166cd5d6817ec9d8293825ff3fb "xtensa: Add some dedicated patterns that correspond to GIMPLE canonicalizations"
+cfad4856fa46abc878934a9433d0bfc2482ccf00 "xtensa: Eliminate unwanted reg-reg moves during DFmode input reloads"
+ce3867d414bd7d9e5b6fb2a51b1fb3d9e9e1eae9 "xtensa: Eliminate [DS]Cmode hard register clobber that is immediately followed by whole overwrite the register"
+479b6f449ee999501ad6eff0b7db8d0cd5b2d28d "xtensa: Defer storing integer constants into litpool until reload"
+---
+ gcc/config/xtensa/constraints.md              |   10 +-
+ gcc/config/xtensa/predicates.md               |   41 +-
+ gcc/config/xtensa/xtensa-protos.h             |   11 +-
+ gcc/config/xtensa/xtensa.c                    |  733 +++++++++---
+ gcc/config/xtensa/xtensa.h                    |    7 +-
+ gcc/config/xtensa/xtensa.md                   | 1024 +++++++++++++----
+ gcc/config/xtensa/xtensa.opt                  |    6 +-
+ gcc/doc/invoke.texi                           |   11 +-
+ gcc/testsuite/gcc.target/xtensa/BALL-BNALL.c  |   33 +
+ gcc/testsuite/gcc.target/xtensa/bswap-O1.c    |   37 +
+ gcc/testsuite/gcc.target/xtensa/bswap-O2.c    |   37 +
+ gcc/testsuite/gcc.target/xtensa/bswap-Os.c    |   37 +
+ .../gcc.target/xtensa/check_zero_byte.c       |    9 +
+ .../gcc.target/xtensa/constsynth_2insns.c     |   44 +
+ .../gcc.target/xtensa/constsynth_3insns.c     |   24 +
+ .../gcc.target/xtensa/constsynth_double.c     |   11 +
+ .../gcc.target/xtensa/funnel_shifter.c        |   17 +
+ .../gcc.target/xtensa/one_cmpl_abs.c          |    9 +
+ gcc/testsuite/gcc.target/xtensa/sibcalls.c    |   20 +
+ libgcc/config/xtensa/lib1funcs.S              |   23 +
+ libgcc/config/xtensa/t-xtensa                 |    2 +-
+ 21 files changed, 1796 insertions(+), 350 deletions(-)
+ create mode 100644 gcc/testsuite/gcc.target/xtensa/BALL-BNALL.c
+ create mode 100644 gcc/testsuite/gcc.target/xtensa/bswap-O1.c
+ create mode 100644 gcc/testsuite/gcc.target/xtensa/bswap-O2.c
+ create mode 100644 gcc/testsuite/gcc.target/xtensa/bswap-Os.c
+ create mode 100644 gcc/testsuite/gcc.target/xtensa/check_zero_byte.c
+ create mode 100644 gcc/testsuite/gcc.target/xtensa/constsynth_2insns.c
+ create mode 100644 gcc/testsuite/gcc.target/xtensa/constsynth_3insns.c
+ create mode 100644 gcc/testsuite/gcc.target/xtensa/constsynth_double.c
+ create mode 100644 gcc/testsuite/gcc.target/xtensa/funnel_shifter.c
+ create mode 100644 gcc/testsuite/gcc.target/xtensa/one_cmpl_abs.c
+ create mode 100644 gcc/testsuite/gcc.target/xtensa/sibcalls.c
+
+diff --git a/gcc/config/xtensa/constraints.md b/gcc/config/xtensa/constraints.md
+index 2062c8816..13b3daafc 100644
+--- a/gcc/config/xtensa/constraints.md
++++ b/gcc/config/xtensa/constraints.md
+@@ -92,7 +92,7 @@
+  "An integer constant in the range @minus{}32-95 for use with MOVI.N
+   instructions."
+  (and (match_code "const_int")
+-      (match_test "ival >= -32 && ival <= 95")))
++      (match_test "IN_RANGE (ival, -32, 95)")))
+ 
+ (define_constraint "N"
+  "An unsigned 8-bit integer constant shifted left by 8 bits for use
+@@ -103,7 +103,7 @@
+ (define_constraint "O"
+  "An integer constant that can be used in ADDI.N instructions."
+  (and (match_code "const_int")
+-      (match_test "ival == -1 || (ival >= 1 && ival <= 15)")))
++      (match_test "ival == -1 || IN_RANGE (ival, 1, 15)")))
+ 
+ (define_constraint "P"
+  "An integer constant that can be used as a mask value in an EXTUI
+@@ -113,8 +113,10 @@
+ 
+ (define_constraint "Y"
+  "A constant that can be used in relaxed MOVI instructions."
+- (and (match_code "const_int,const_double,const,symbol_ref,label_ref")
+-      (match_test "TARGET_AUTO_LITPOOLS")))
++ (ior (and (match_code "const_int,const_double,const,symbol_ref,label_ref")
++	   (match_test "TARGET_AUTO_LITPOOLS"))
++      (and (match_code "const_int")
++	   (match_test "can_create_pseudo_p ()"))))
+ 
+ ;; Memory constraints.  Do not use define_memory_constraint here.  Doing so
+ ;; causes reload to force some constants into the constant pool, but since
+diff --git a/gcc/config/xtensa/predicates.md b/gcc/config/xtensa/predicates.md
+index eb52b05aa..633cc6264 100644
+--- a/gcc/config/xtensa/predicates.md
++++ b/gcc/config/xtensa/predicates.md
+@@ -25,8 +25,7 @@
+ 
+ (define_predicate "addsubx_operand"
+   (and (match_code "const_int")
+-       (match_test "INTVAL (op) >= 1
+-		    && INTVAL (op) <= 3")))
++       (match_test "IN_RANGE (INTVAL (op), 1, 3)")))
+ 
+ (define_predicate "arith_operand"
+   (ior (and (match_code "const_int")
+@@ -53,9 +52,19 @@
+ 	    (match_test "xtensa_mask_immediate (INTVAL (op))"))
+        (match_operand 0 "register_operand")))
+ 
++(define_predicate "shifted_mask_operand"
++  (match_code "const_int")
++{
++  HOST_WIDE_INT mask = INTVAL (op);
++  int shift = ctz_hwi (mask);
++
++  return IN_RANGE (shift, 1, 31)
++	 && xtensa_mask_immediate ((uint32_t)mask >> shift);
++})
++
+ (define_predicate "extui_fldsz_operand"
+   (and (match_code "const_int")
+-       (match_test "xtensa_mask_immediate ((1 << INTVAL (op)) - 1)")))
++       (match_test "IN_RANGE (INTVAL (op), 1, 16)")))
+ 
+ (define_predicate "sext_operand"
+   (if_then_else (match_test "TARGET_SEXT")
+@@ -64,7 +73,7 @@
+ 
+ (define_predicate "sext_fldsz_operand"
+   (and (match_code "const_int")
+-       (match_test "INTVAL (op) >= 8 && INTVAL (op) <= 23")))
++       (match_test "IN_RANGE (INTVAL (op), 8, 23)")))
+ 
+ (define_predicate "lsbitnum_operand"
+   (and (match_code "const_int")
+@@ -138,8 +147,9 @@
+ 	       (match_test "!constantpool_mem_p (op)
+ 			    || GET_MODE_SIZE (mode) % UNITS_PER_WORD == 0")))
+      (ior (and (match_code "const_int")
+-	       (match_test "GET_MODE_CLASS (mode) == MODE_INT
+-			    && xtensa_simm12b (INTVAL (op))"))
++	       (match_test "(GET_MODE_CLASS (mode) == MODE_INT
++			     && xtensa_simm12b (INTVAL (op)))
++			    || can_create_pseudo_p ()"))
+ 	  (and (match_code "const_int,const_double,const,symbol_ref,label_ref")
+ 	       (match_test "(TARGET_CONST16 || TARGET_AUTO_LITPOOLS)
+ 			    && CONSTANT_P (op)
+@@ -156,6 +166,19 @@
+   (and (match_code "const_int")
+        (match_test "xtensa_mem_offset (INTVAL (op), SFmode)")))
+ 
++(define_predicate "reload_operand"
++  (match_code "mem")
++{
++  const_rtx addr = XEXP (op, 0);
++  if (REG_P (addr))
++    return REGNO (addr) == A1_REG;
++  if (GET_CODE (addr) == PLUS)
++    return REG_P (XEXP (addr, 0))
++	   && REGNO (XEXP (addr, 0)) == A1_REG
++	   && CONST_INT_P (XEXP (addr, 1));
++  return false;
++})
++
+ (define_predicate "branch_operator"
+   (match_code "eq,ne,lt,ge"))
+ 
+@@ -165,9 +188,15 @@
+ (define_predicate "boolean_operator"
+   (match_code "eq,ne"))
+ 
++(define_predicate "logical_shift_operator"
++  (match_code "ashift,lshiftrt"))
++
+ (define_predicate "xtensa_cstoresi_operator"
+   (match_code "eq,ne,gt,ge,lt,le"))
+ 
++(define_predicate "xtensa_shift_per_byte_operator"
++  (match_code "ashift,ashiftrt,lshiftrt"))
++
+ (define_predicate "tls_symbol_operand"
+   (and (match_code "symbol_ref")
+        (match_test "SYMBOL_REF_TLS_MODEL (op) != 0")))
+diff --git a/gcc/config/xtensa/xtensa-protos.h b/gcc/config/xtensa/xtensa-protos.h
+index 18d803581..75ed3bfb0 100644
+--- a/gcc/config/xtensa/xtensa-protos.h
++++ b/gcc/config/xtensa/xtensa-protos.h
+@@ -41,18 +41,23 @@ extern void xtensa_expand_conditional_branch (rtx *, machine_mode);
+ extern int xtensa_expand_conditional_move (rtx *, int);
+ extern int xtensa_expand_scc (rtx *, machine_mode);
+ extern int xtensa_expand_block_move (rtx *);
++extern int xtensa_expand_block_set_unrolled_loop (rtx *);
++extern int xtensa_expand_block_set_small_loop (rtx *);
+ extern void xtensa_split_operand_pair (rtx *, machine_mode);
++extern int xtensa_constantsynth (rtx, HOST_WIDE_INT);
+ extern int xtensa_emit_move_sequence (rtx *, machine_mode);
+ extern rtx xtensa_copy_incoming_a7 (rtx);
+ extern void xtensa_expand_nonlocal_goto (rtx *);
+ extern void xtensa_expand_compare_and_swap (rtx, rtx, rtx, rtx);
+ extern void xtensa_expand_atomic (enum rtx_code, rtx, rtx, rtx, bool);
+ extern void xtensa_emit_loop_end (rtx_insn *, rtx *);
+-extern char *xtensa_emit_branch (bool, bool, rtx *);
+-extern char *xtensa_emit_bit_branch (bool, bool, rtx *);
++extern char *xtensa_emit_branch (bool, rtx *);
+ extern char *xtensa_emit_movcc (bool, bool, bool, rtx *);
++extern void xtensa_prepare_expand_call (int, rtx *);
+ extern char *xtensa_emit_call (int, rtx *);
++extern char *xtensa_emit_sibcall (int, rtx *);
+ extern bool xtensa_tls_referenced_p (rtx);
++extern enum rtx_code xtensa_shlrd_which_direction (rtx, rtx);
+ 
+ #ifdef TREE_CODE
+ extern void init_cumulative_args (CUMULATIVE_ARGS *, int);
+@@ -70,7 +75,7 @@ extern int xtensa_dbx_register_number (int);
+ extern long compute_frame_size (poly_int64);
+ extern bool xtensa_use_return_instruction_p (void);
+ extern void xtensa_expand_prologue (void);
+-extern void xtensa_expand_epilogue (void);
++extern void xtensa_expand_epilogue (bool);
+ extern void order_regs_for_local_alloc (void);
+ extern enum reg_class xtensa_regno_to_class (int regno);
+ extern HOST_WIDE_INT xtensa_initial_elimination_offset (int from, int to);
+diff --git a/gcc/config/xtensa/xtensa.c b/gcc/config/xtensa/xtensa.c
+index 6cd9d5528..5b1aa9b23 100644
+--- a/gcc/config/xtensa/xtensa.c
++++ b/gcc/config/xtensa/xtensa.c
+@@ -55,6 +55,7 @@ along with GCC; see the file COPYING3.  If not see
+ #include "dumpfile.h"
+ #include "hw-doloop.h"
+ #include "rtl-iter.h"
++#include "insn-attr.h"
+ 
+ /* This file should be included last.  */
+ #include "target-def.h"
+@@ -117,7 +118,7 @@ const char xtensa_leaf_regs[FIRST_PSEUDO_REGISTER] =
+ 
+ static void xtensa_option_override (void);
+ static enum internal_test map_test_to_internal_test (enum rtx_code);
+-static rtx gen_int_relational (enum rtx_code, rtx, rtx, int *);
++static rtx gen_int_relational (enum rtx_code, rtx, rtx);
+ static rtx gen_float_relational (enum rtx_code, rtx, rtx);
+ static rtx gen_conditional_move (enum rtx_code, machine_mode, rtx, rtx);
+ static rtx fixup_subreg_mem (rtx);
+@@ -134,6 +135,7 @@ static unsigned int xtensa_multibss_section_type_flags (tree, const char *,
+ static section *xtensa_select_rtx_section (machine_mode, rtx,
+ 					   unsigned HOST_WIDE_INT);
+ static bool xtensa_rtx_costs (rtx, machine_mode, int, int, int *, bool);
++static int xtensa_insn_cost (rtx_insn *, bool);
+ static int xtensa_register_move_cost (machine_mode, reg_class_t,
+ 				      reg_class_t);
+ static int xtensa_memory_move_cost (machine_mode, reg_class_t, bool);
+@@ -185,6 +187,7 @@ static bool xtensa_modes_tieable_p (machine_mode, machine_mode);
+ static HOST_WIDE_INT xtensa_constant_alignment (const_tree, HOST_WIDE_INT);
+ static HOST_WIDE_INT xtensa_starting_frame_offset (void);
+ static unsigned HOST_WIDE_INT xtensa_asan_shadow_offset (void);
++static bool xtensa_function_ok_for_sibcall (tree, tree);
+ 
+ 
+ 
+@@ -208,6 +211,8 @@ static unsigned HOST_WIDE_INT xtensa_asan_shadow_offset (void);
+ #define TARGET_MEMORY_MOVE_COST xtensa_memory_move_cost
+ #undef TARGET_RTX_COSTS
+ #define TARGET_RTX_COSTS xtensa_rtx_costs
++#undef TARGET_INSN_COST
++#define TARGET_INSN_COST xtensa_insn_cost
+ #undef TARGET_ADDRESS_COST
+ #define TARGET_ADDRESS_COST hook_int_rtx_mode_as_bool_0
+ 
+@@ -333,6 +338,9 @@ static unsigned HOST_WIDE_INT xtensa_asan_shadow_offset (void);
+ #undef TARGET_HAVE_SPECULATION_SAFE_VALUE
+ #define TARGET_HAVE_SPECULATION_SAFE_VALUE speculation_safe_value_not_needed
+ 
++#undef TARGET_FUNCTION_OK_FOR_SIBCALL
++#define TARGET_FUNCTION_OK_FOR_SIBCALL xtensa_function_ok_for_sibcall
++
+ struct gcc_target targetm = TARGET_INITIALIZER;
+ 
+ 
+@@ -341,42 +349,42 @@ struct gcc_target targetm = TARGET_INITIALIZER;
+ bool
+ xtensa_simm8 (HOST_WIDE_INT v)
+ {
+-  return v >= -128 && v <= 127;
++  return IN_RANGE (v, -128, 127);
+ }
+ 
+ 
+ bool
+ xtensa_simm8x256 (HOST_WIDE_INT v)
+ {
+-  return (v & 255) == 0 && (v >= -32768 && v <= 32512);
++  return (v & 255) == 0 && IN_RANGE (v, -32768, 32512);
+ }
+ 
+ 
+ bool
+ xtensa_simm12b (HOST_WIDE_INT v)
+ {
+-  return v >= -2048 && v <= 2047;
++  return IN_RANGE (v, -2048, 2047);
+ }
+ 
+ 
+ static bool
+ xtensa_uimm8 (HOST_WIDE_INT v)
+ {
+-  return v >= 0 && v <= 255;
++  return IN_RANGE (v, 0, 255);
+ }
+ 
+ 
+ static bool
+ xtensa_uimm8x2 (HOST_WIDE_INT v)
+ {
+-  return (v & 1) == 0 && (v >= 0 && v <= 510);
++  return (v & 1) == 0 && IN_RANGE (v, 0, 510);
+ }
+ 
+ 
+ static bool
+ xtensa_uimm8x4 (HOST_WIDE_INT v)
+ {
+-  return (v & 3) == 0 && (v >= 0 && v <= 1020);
++  return (v & 3) == 0 && IN_RANGE (v, 0, 1020);
+ }
+ 
+ 
+@@ -446,19 +454,7 @@ xtensa_b4constu (HOST_WIDE_INT v)
+ bool
+ xtensa_mask_immediate (HOST_WIDE_INT v)
+ {
+-#define MAX_MASK_SIZE 16
+-  int mask_size;
+-
+-  for (mask_size = 1; mask_size <= MAX_MASK_SIZE; mask_size++)
+-    {
+-      if ((v & 1) == 0)
+-	return false;
+-      v = v >> 1;
+-      if (v == 0)
+-	return true;
+-    }
+-
+-  return false;
++  return IN_RANGE (exact_log2 (v + 1), 1, 16);
+ }
+ 
+ 
+@@ -539,7 +535,7 @@ smalloffset_mem_p (rtx op)
+ 	    return FALSE;
+ 
+ 	  val = INTVAL (offset);
+-	  return (val & 3) == 0 && (val >= 0 && val <= 60);
++	  return (val & 3) == 0 && IN_RANGE (val, 0, 60);
+ 	}
+     }
+   return FALSE;
+@@ -678,8 +674,7 @@ map_test_to_internal_test (enum rtx_code test_code)
+ static rtx
+ gen_int_relational (enum rtx_code test_code, /* relational test (EQ, etc) */
+ 		    rtx cmp0, /* first operand to compare */
+-		    rtx cmp1, /* second operand to compare */
+-		    int *p_invert /* whether branch needs to reverse test */)
++		    rtx cmp1 /* second operand to compare */)
+ {
+   struct cmp_info
+   {
+@@ -711,6 +706,7 @@ gen_int_relational (enum rtx_code test_code, /* relational test (EQ, etc) */
+   enum internal_test test;
+   machine_mode mode;
+   struct cmp_info *p_info;
++  int invert;
+ 
+   test = map_test_to_internal_test (test_code);
+   gcc_assert (test != ITEST_MAX);
+@@ -747,9 +743,9 @@ gen_int_relational (enum rtx_code test_code, /* relational test (EQ, etc) */
+     }
+ 
+   /* See if we need to invert the result.  */
+-  *p_invert = ((GET_CODE (cmp1) == CONST_INT)
+-	       ? p_info->invert_const
+-	       : p_info->invert_reg);
++  invert = ((GET_CODE (cmp1) == CONST_INT)
++	    ? p_info->invert_const
++	    : p_info->invert_reg);
+ 
+   /* Comparison to constants, may involve adding 1 to change a LT into LE.
+      Comparison between two registers, may involve switching operands.  */
+@@ -766,7 +762,9 @@ gen_int_relational (enum rtx_code test_code, /* relational test (EQ, etc) */
+       cmp1 = temp;
+     }
+ 
+-  return gen_rtx_fmt_ee (p_info->test_code, VOIDmode, cmp0, cmp1);
++  return gen_rtx_fmt_ee (invert ? reverse_condition (p_info->test_code)
++				: p_info->test_code,
++			 VOIDmode, cmp0, cmp1);
+ }
+ 
+ 
+@@ -825,45 +823,33 @@ xtensa_expand_conditional_branch (rtx *operands, machine_mode mode)
+   enum rtx_code test_code = GET_CODE (operands[0]);
+   rtx cmp0 = operands[1];
+   rtx cmp1 = operands[2];
+-  rtx cmp;
+-  int invert;
+-  rtx label1, label2;
++  rtx cmp, label;
+ 
+   switch (mode)
+     {
++    case E_SFmode:
++      if (TARGET_HARD_FLOAT)
++	{
++	  cmp = gen_float_relational (test_code, cmp0, cmp1);
++	  break;
++	}
++      /* FALLTHRU */
++
+     case E_DFmode:
+     default:
+       fatal_insn ("bad test", gen_rtx_fmt_ee (test_code, VOIDmode, cmp0, cmp1));
+ 
+     case E_SImode:
+-      invert = FALSE;
+-      cmp = gen_int_relational (test_code, cmp0, cmp1, &invert);
+-      break;
+-
+-    case E_SFmode:
+-      if (!TARGET_HARD_FLOAT)
+-	fatal_insn ("bad test", gen_rtx_fmt_ee (test_code, VOIDmode,
+-						cmp0, cmp1));
+-      invert = FALSE;
+-      cmp = gen_float_relational (test_code, cmp0, cmp1);
++      cmp = gen_int_relational (test_code, cmp0, cmp1);
+       break;
+     }
+ 
+   /* Generate the branch.  */
+-
+-  label1 = gen_rtx_LABEL_REF (VOIDmode, operands[3]);
+-  label2 = pc_rtx;
+-
+-  if (invert)
+-    {
+-      label2 = label1;
+-      label1 = pc_rtx;
+-    }
+-
++  label = gen_rtx_LABEL_REF (VOIDmode, operands[3]);
+   emit_jump_insn (gen_rtx_SET (pc_rtx,
+ 			       gen_rtx_IF_THEN_ELSE (VOIDmode, cmp,
+-						     label1,
+-						     label2)));
++						     label,
++						     pc_rtx)));
+ }
+ 
+ 
+@@ -1035,6 +1021,123 @@ xtensa_split_operand_pair (rtx operands[4], machine_mode mode)
+ }
+ 
+ 
++/* Try to emit insns to load srcval (that cannot fit into signed 12-bit)
++   into dst with synthesizing a such constant value from a sequence of
++   load-immediate / arithmetic ones, instead of a L32R instruction
++   (plus a constant in litpool).  */
++
++static void
++xtensa_emit_constantsynth (rtx dst, enum rtx_code code,
++			   HOST_WIDE_INT imm0, HOST_WIDE_INT imm1,
++			   rtx (*gen_op)(rtx, HOST_WIDE_INT),
++			   HOST_WIDE_INT imm2)
++{
++  gcc_assert (REG_P (dst));
++  emit_move_insn (dst, GEN_INT (imm0));
++  emit_move_insn (dst, gen_rtx_fmt_ee (code, SImode,
++				       dst, GEN_INT (imm1)));
++  if (gen_op)
++    emit_move_insn (dst, gen_op (dst, imm2));
++}
++
++static int
++xtensa_constantsynth_2insn (rtx dst, HOST_WIDE_INT srcval,
++			    rtx (*gen_op)(rtx, HOST_WIDE_INT),
++			    HOST_WIDE_INT op_imm)
++{
++  int shift = exact_log2 (srcval + 1);
++
++  if (IN_RANGE (shift, 1, 31))
++    {
++      xtensa_emit_constantsynth (dst, LSHIFTRT, -1, 32 - shift,
++				 gen_op, op_imm);
++      return 1;
++    }
++
++  if (IN_RANGE (srcval, (-2048 - 32768), (2047 + 32512)))
++    {
++      HOST_WIDE_INT imm0, imm1;
++
++      if (srcval < -32768)
++	imm1 = -32768;
++      else if (srcval > 32512)
++	imm1 = 32512;
++      else
++	imm1 = srcval & ~255;
++      imm0 = srcval - imm1;
++      if (TARGET_DENSITY && imm1 < 32512 && IN_RANGE (imm0, 224, 255))
++	imm0 -= 256, imm1 += 256;
++      xtensa_emit_constantsynth (dst, PLUS, imm0, imm1, gen_op, op_imm);
++	return 1;
++    }
++
++  shift = ctz_hwi (srcval);
++  if (xtensa_simm12b (srcval >> shift))
++    {
++      xtensa_emit_constantsynth (dst, ASHIFT, srcval >> shift, shift,
++				 gen_op, op_imm);
++      return 1;
++    }
++
++  return 0;
++}
++
++static rtx
++xtensa_constantsynth_rtx_SLLI (rtx reg, HOST_WIDE_INT imm)
++{
++  return gen_rtx_ASHIFT (SImode, reg, GEN_INT (imm));
++}
++
++static rtx
++xtensa_constantsynth_rtx_ADDSUBX (rtx reg, HOST_WIDE_INT imm)
++{
++  return imm == 7
++	 ? gen_rtx_MINUS (SImode, gen_rtx_ASHIFT (SImode, reg, GEN_INT (3)),
++			  reg)
++	 : gen_rtx_PLUS (SImode, gen_rtx_ASHIFT (SImode, reg,
++						 GEN_INT (floor_log2 (imm - 1))),
++			 reg);
++}
++
++int
++xtensa_constantsynth (rtx dst, HOST_WIDE_INT srcval)
++{
++  /* No need for synthesizing for what fits into MOVI instruction.  */
++  if (xtensa_simm12b (srcval))
++    return 0;
++
++  /* 2-insns substitution.  */
++  if ((optimize_size || (optimize && xtensa_extra_l32r_costs >= 1))
++      && xtensa_constantsynth_2insn (dst, srcval, NULL, 0))
++    return 1;
++
++  /* 3-insns substitution.  */
++  if (optimize > 1 && !optimize_size && xtensa_extra_l32r_costs >= 2)
++    {
++      int shift, divisor;
++
++      /* 2-insns substitution followed by SLLI.  */
++      shift = ctz_hwi (srcval);
++      if (IN_RANGE (shift, 1, 31) &&
++	  xtensa_constantsynth_2insn (dst, srcval >> shift,
++				      xtensa_constantsynth_rtx_SLLI,
++				      shift))
++	return 1;
++
++      /* 2-insns substitution followed by ADDX[248] or SUBX8.  */
++      if (TARGET_ADDX)
++	for (divisor = 3; divisor <= 9; divisor += 2)
++	  if (srcval % divisor == 0 &&
++	      xtensa_constantsynth_2insn (dst, srcval / divisor,
++					  xtensa_constantsynth_rtx_ADDSUBX,
++					  divisor))
++	    return 1;
++    }
++
++  return 0;
++}
++
++
+ /* Emit insns to move operands[1] into operands[0].
+    Return 1 if we have written out everything that needs to be done to
+    do the move.  Otherwise, return 0 and the caller will emit the move
+@@ -1070,24 +1173,9 @@ xtensa_emit_move_sequence (rtx *operands, machine_mode mode)
+ 	  return 1;
+ 	}
+ 
+-      if (! TARGET_AUTO_LITPOOLS && ! TARGET_CONST16)
++      if (! TARGET_AUTO_LITPOOLS && ! TARGET_CONST16
++	  && ! (CONST_INT_P (src) && can_create_pseudo_p ()))
+ 	{
+-	  /* Try to emit MOVI + SLLI sequence, that is smaller
+-	     than L32R + literal.  */
+-	  if (optimize >= 1 && ! optimize_debug && mode == SImode
+-	      && CONST_INT_P (src) && register_operand (dst, mode))
+-	    {
+-	      HOST_WIDE_INT srcval = INTVAL (src);
+-	      int shift = ctz_hwi (srcval);
+-
+-	      if (xtensa_simm12b (srcval >> shift))
+-		{
+-		  emit_move_insn (dst, GEN_INT (srcval >> shift));
+-		  emit_insn (gen_ashlsi3_internal (dst, dst, GEN_INT (shift)));
+-		  return 1;
+-		}
+-	    }
+-
+ 	  src = force_const_mem (SImode, src);
+ 	  operands[1] = src;
+ 	}
+@@ -1315,7 +1403,7 @@ xtensa_expand_block_move (rtx *operands)
+   move_ratio = 4;
+   if (optimize > 2)
+     move_ratio = LARGEST_MOVE_RATIO;
+-  num_pieces = (bytes / align) + (bytes % align); /* Close enough anyway.  */
++  num_pieces = (bytes / align) + ((bytes % align + 1) / 2);
+   if (num_pieces > move_ratio)
+     return 0;
+ 
+@@ -1352,7 +1440,7 @@ xtensa_expand_block_move (rtx *operands)
+ 	  temp[next] = gen_reg_rtx (mode[next]);
+ 
+ 	  x = adjust_address (src_mem, mode[next], offset_ld);
+-	  emit_insn (gen_rtx_SET (temp[next], x));
++	  emit_move_insn (temp[next], x);
+ 
+ 	  offset_ld += next_amount;
+ 	  bytes -= next_amount;
+@@ -1362,9 +1450,9 @@ xtensa_expand_block_move (rtx *operands)
+       if (active[phase])
+ 	{
+ 	  active[phase] = false;
+-	  
++
+ 	  x = adjust_address (dst_mem, mode[phase], offset_st);
+-	  emit_insn (gen_rtx_SET (x, temp[phase]));
++	  emit_move_insn (x, temp[phase]);
+ 
+ 	  offset_st += amount[phase];
+ 	}
+@@ -1375,6 +1463,246 @@ xtensa_expand_block_move (rtx *operands)
+ }
+ 
+ 
++/* Try to expand a block set operation to a sequence of RTL move
++   instructions.  If not optimizing, or if the block size is not a
++   constant, or if the block is too large, or if the value to
++   initialize the block with is not a constant, the expansion
++   fails and GCC falls back to calling memset().
++
++   operands[0] is the destination
++   operands[1] is the length
++   operands[2] is the initialization value
++   operands[3] is the alignment */
++
++static int
++xtensa_sizeof_MOVI (HOST_WIDE_INT imm)
++{
++  return (TARGET_DENSITY && IN_RANGE (imm, -32, 95)) ? 2 : 3;
++}
++
++int
++xtensa_expand_block_set_unrolled_loop (rtx *operands)
++{
++  rtx dst_mem = operands[0];
++  HOST_WIDE_INT bytes, value, align;
++  int expand_len, funccall_len;
++  rtx x, reg;
++  int offset;
++
++  if (!CONST_INT_P (operands[1]) || !CONST_INT_P (operands[2]))
++    return 0;
++
++  bytes = INTVAL (operands[1]);
++  if (bytes <= 0)
++    return 0;
++  value = (int8_t)INTVAL (operands[2]);
++  align = INTVAL (operands[3]);
++  if (align > MOVE_MAX)
++    align = MOVE_MAX;
++
++  /* Insn expansion: holding the init value.
++     Either MOV(.N) or L32R w/litpool.  */
++  if (align == 1)
++    expand_len = xtensa_sizeof_MOVI (value);
++  else if (value == 0 || value == -1)
++    expand_len = TARGET_DENSITY ? 2 : 3;
++  else
++    expand_len = 3 + 4;
++  /* Insn expansion: a series of aligned memory stores.
++     Consist of S8I, S16I or S32I(.N).  */
++  expand_len += (bytes / align) * (TARGET_DENSITY
++				   && align == 4 ? 2 : 3);
++  /* Insn expansion: the remainder, sub-aligned memory stores.
++     A combination of S8I and S16I as needed.  */
++  expand_len += ((bytes % align + 1) / 2) * 3;
++
++  /* Function call: preparing two arguments.  */
++  funccall_len = xtensa_sizeof_MOVI (value);
++  funccall_len += xtensa_sizeof_MOVI (bytes);
++  /* Function call: calling memset().  */
++  funccall_len += TARGET_LONGCALLS ? (3 + 4 + 3) : 3;
++
++  /* Apply expansion bonus (2x) if optimizing for speed.  */
++  if (optimize > 1 && !optimize_size)
++    funccall_len *= 2;
++
++  /* Decide whether to expand or not, based on the sum of the length
++     of instructions.  */
++  if (expand_len > funccall_len)
++    return 0;
++
++  x = XEXP (dst_mem, 0);
++  if (!REG_P (x))
++    dst_mem = replace_equiv_address (dst_mem, force_reg (Pmode, x));
++  switch (align)
++    {
++    case 1:
++      break;
++    case 2:
++      value = (int16_t)((uint8_t)value * 0x0101U);
++      break;
++    case 4:
++      value = (int32_t)((uint8_t)value * 0x01010101U);
++      break;
++    default:
++      gcc_unreachable ();
++    }
++  reg = force_reg (SImode, GEN_INT (value));
++
++  offset = 0;
++  do
++    {
++      int unit_size = MIN (bytes, align);
++      machine_mode unit_mode = (unit_size >= 4 ? SImode :
++			       (unit_size >= 2 ? HImode :
++						 QImode));
++      unit_size = GET_MODE_SIZE (unit_mode);
++
++      emit_move_insn (adjust_address (dst_mem, unit_mode, offset),
++		      unit_mode == SImode ? reg
++		      : convert_to_mode (unit_mode, reg, true));
++
++      offset += unit_size;
++      bytes -= unit_size;
++    }
++  while (bytes > 0);
++
++  return 1;
++}
++
++int
++xtensa_expand_block_set_small_loop (rtx *operands)
++{
++  HOST_WIDE_INT bytes, value, align, count;
++  int expand_len, funccall_len;
++  rtx x, dst, end, reg;
++  machine_mode unit_mode;
++  rtx_code_label *label;
++
++  if (!CONST_INT_P (operands[1]) || !CONST_INT_P (operands[2]))
++    return 0;
++
++  bytes = INTVAL (operands[1]);
++  if (bytes <= 0)
++    return 0;
++  value = (int8_t)INTVAL (operands[2]);
++  align = INTVAL (operands[3]);
++  if (align > MOVE_MAX)
++    align = MOVE_MAX;
++
++  /* Totally-aligned block only.  */
++  if (bytes % align != 0)
++    return 0;
++  count = bytes / align;
++
++  /* If the Loop Option (zero-overhead looping) is configured and active,
++     almost no restrictions about the length of the block.  */
++  if (! (TARGET_LOOPS && optimize))
++    {
++      /* If 4-byte aligned, small loop substitution is almost optimal,
++	 thus limited to only offset to the end address for ADDI/ADDMI
++	 instruction.  */
++      if (align == 4
++	  && ! (bytes <= 127 || (bytes <= 32512 && bytes % 256 == 0)))
++	return 0;
++
++      /* If no 4-byte aligned, loop count should be treated as the
++	 constraint.  */
++      if (align != 4
++	  && count > ((optimize > 1 && !optimize_size) ? 8 : 15))
++	return 0;
++    }
++
++  /* Insn expansion: holding the init value.
++     Either MOV(.N) or L32R w/litpool.  */
++  if (align == 1)
++    expand_len = xtensa_sizeof_MOVI (value);
++  else if (value == 0 || value == -1)
++    expand_len = TARGET_DENSITY ? 2 : 3;
++  else
++    expand_len = 3 + 4;
++  if (TARGET_LOOPS && optimize) /* zero-overhead looping */
++    {
++      /* Insn translation: Either MOV(.N) or L32R w/litpool for the
++	 loop count.  */
++      expand_len += xtensa_simm12b (count) ? xtensa_sizeof_MOVI (count)
++					   : 3 + 4;
++      /* Insn translation: LOOP, the zero-overhead looping setup
++	 instruction.  */
++      expand_len += 3;
++      /* Insn expansion: the loop body instructions.
++	For store, one of S8I, S16I or S32I(.N).
++	For advance, ADDI(.N).  */
++      expand_len += (TARGET_DENSITY && align == 4 ? 2 : 3)
++		    + (TARGET_DENSITY ? 2 : 3);
++    }
++  else /* NO zero-overhead looping */
++    {
++      /* Insn expansion: Either ADDI(.N) or ADDMI for the end address.  */
++      expand_len += bytes > 127 ? 3
++				: (TARGET_DENSITY && bytes <= 15) ? 2 : 3;
++      /* Insn expansion: the loop body and branch instruction.
++	For store, one of S8I, S16I or S32I(.N).
++	For advance, ADDI(.N).
++	For branch, BNE.  */
++      expand_len += (TARGET_DENSITY && align == 4 ? 2 : 3)
++		    + (TARGET_DENSITY ? 2 : 3) + 3;
++    }
++
++  /* Function call: preparing two arguments.  */
++  funccall_len = xtensa_sizeof_MOVI (value);
++  funccall_len += xtensa_sizeof_MOVI (bytes);
++  /* Function call: calling memset().  */
++  funccall_len += TARGET_LONGCALLS ? (3 + 4 + 3) : 3;
++
++  /* Apply expansion bonus (2x) if optimizing for speed.  */
++  if (optimize > 1 && !optimize_size)
++    funccall_len *= 2;
++
++  /* Decide whether to expand or not, based on the sum of the length
++     of instructions.  */
++  if (expand_len > funccall_len)
++    return 0;
++
++  x = XEXP (operands[0], 0);
++  if (!REG_P (x))
++    x = XEXP (replace_equiv_address (operands[0], force_reg (Pmode, x)), 0);
++  dst = gen_reg_rtx (SImode);
++  emit_move_insn (dst, x);
++  end = gen_reg_rtx (SImode);
++  if (TARGET_LOOPS && optimize)
++    x = force_reg (SImode, operands[1] /* the length */);
++  else
++    x = operands[1];
++  emit_insn (gen_addsi3 (end, dst, x));
++  switch (align)
++    {
++    case 1:
++      unit_mode = QImode;
++      break;
++    case 2:
++      value = (int16_t)((uint8_t)value * 0x0101U);
++      unit_mode = HImode;
++      break;
++    case 4:
++      value = (int32_t)((uint8_t)value * 0x01010101U);
++      unit_mode = SImode;
++      break;
++    default:
++      gcc_unreachable ();
++    }
++  reg = force_reg (unit_mode, GEN_INT (value));
++
++  label = gen_label_rtx ();
++  emit_label (label);
++  emit_move_insn (gen_rtx_MEM (unit_mode, dst), reg);
++  emit_insn (gen_addsi3 (dst, dst, GEN_INT (align)));
++  emit_cmp_and_jump_insns (dst, end, NE, const0_rtx, SImode, true, label);
++
++  return 1;
++}
++
++
+ void
+ xtensa_expand_nonlocal_goto (rtx *operands)
+ {
+@@ -1725,21 +2053,20 @@ xtensa_emit_loop_end (rtx_insn *insn, rtx *operands)
+ 
+ 
+ char *
+-xtensa_emit_branch (bool inverted, bool immed, rtx *operands)
++xtensa_emit_branch (bool immed, rtx *operands)
+ {
+   static char result[64];
+-  enum rtx_code code;
++  enum rtx_code code = GET_CODE (operands[3]);
+   const char *op;
+ 
+-  code = GET_CODE (operands[3]);
+   switch (code)
+     {
+-    case EQ:	op = inverted ? "ne" : "eq"; break;
+-    case NE:	op = inverted ? "eq" : "ne"; break;
+-    case LT:	op = inverted ? "ge" : "lt"; break;
+-    case GE:	op = inverted ? "lt" : "ge"; break;
+-    case LTU:	op = inverted ? "geu" : "ltu"; break;
+-    case GEU:	op = inverted ? "ltu" : "geu"; break;
++    case EQ:	op = "eq"; break;
++    case NE:	op = "ne"; break;
++    case LT:	op = "lt"; break;
++    case GE:	op = "ge"; break;
++    case LTU:	op = "ltu"; break;
++    case GEU:	op = "geu"; break;
+     default:	gcc_unreachable ();
+     }
+ 
+@@ -1758,32 +2085,6 @@ xtensa_emit_branch (bool inverted, bool immed, rtx *operands)
+ }
+ 
+ 
+-char *
+-xtensa_emit_bit_branch (bool inverted, bool immed, rtx *operands)
+-{
+-  static char result[64];
+-  const char *op;
+-
+-  switch (GET_CODE (operands[3]))
+-    {
+-    case EQ:	op = inverted ? "bs" : "bc"; break;
+-    case NE:	op = inverted ? "bc" : "bs"; break;
+-    default:	gcc_unreachable ();
+-    }
+-
+-  if (immed)
+-    {
+-      unsigned bitnum = INTVAL (operands[1]) & 0x1f; 
+-      operands[1] = GEN_INT (bitnum); 
+-      sprintf (result, "b%si\t%%0, %%d1, %%2", op);
+-    }
+-  else
+-    sprintf (result, "b%s\t%%0, %%1, %%2", op);
+-
+-  return result;
+-}
+-
+-
+ char *
+ xtensa_emit_movcc (bool inverted, bool isfp, bool isbool, rtx *operands)
+ {
+@@ -1792,12 +2093,14 @@ xtensa_emit_movcc (bool inverted, bool isfp, bool isbool, rtx *operands)
+   const char *op;
+ 
+   code = GET_CODE (operands[4]);
++  if (inverted)
++    code = reverse_condition (code);
+   if (isbool)
+     {
+       switch (code)
+ 	{
+-	case EQ:	op = inverted ? "t" : "f"; break;
+-	case NE:	op = inverted ? "f" : "t"; break;
++	case EQ:	op = "f"; break;
++	case NE:	op = "t"; break;
+ 	default:	gcc_unreachable ();
+ 	}
+     }
+@@ -1805,10 +2108,10 @@ xtensa_emit_movcc (bool inverted, bool isfp, bool isbool, rtx *operands)
+     {
+       switch (code)
+ 	{
+-	case EQ:	op = inverted ? "nez" : "eqz"; break;
+-	case NE:	op = inverted ? "eqz" : "nez"; break;
+-	case LT:	op = inverted ? "gez" : "ltz"; break;
+-	case GE:	op = inverted ? "ltz" : "gez"; break;
++	case EQ:	op = "eqz"; break;
++	case NE:	op = "nez"; break;
++	case LT:	op = "ltz"; break;
++	case GE:	op = "gez"; break;
+ 	default:	gcc_unreachable ();
+ 	}
+     }
+@@ -1819,6 +2122,20 @@ xtensa_emit_movcc (bool inverted, bool isfp, bool isbool, rtx *operands)
+ }
+ 
+ 
++void
++xtensa_prepare_expand_call (int callop, rtx *operands)
++{
++  rtx addr = XEXP (operands[callop], 0);
++
++  if (flag_pic && SYMBOL_REF_P (addr)
++      && (!SYMBOL_REF_LOCAL_P (addr) || SYMBOL_REF_EXTERNAL_P (addr)))
++    addr = gen_sym_PLT (addr);
++
++  if (!call_insn_operand (addr, VOIDmode))
++    XEXP (operands[callop], 0) = copy_to_mode_reg (Pmode, addr);
++}
++
++
+ char *
+ xtensa_emit_call (int callop, rtx *operands)
+ {
+@@ -1837,6 +2154,24 @@ xtensa_emit_call (int callop, rtx *operands)
+ }
+ 
+ 
++char *
++xtensa_emit_sibcall (int callop, rtx *operands)
++{
++  static char result[64];
++  rtx tgt = operands[callop];
++
++  if (GET_CODE (tgt) == CONST_INT)
++    sprintf (result, "j.l\t" HOST_WIDE_INT_PRINT_HEX ", a9",
++	     INTVAL (tgt));
++  else if (register_operand (tgt, VOIDmode))
++    sprintf (result, "jx\t%%%d", callop);
++  else
++    sprintf (result, "j.l\t%%%d, a9", callop);
++
++  return result;
++}
++
++
+ bool
+ xtensa_legitimate_address_p (machine_mode mode, rtx addr, bool strict)
+ {
+@@ -2061,6 +2396,20 @@ xtensa_tls_referenced_p (rtx x)
+ }
+ 
+ 
++/* Helper function for "*shlrd_..." patterns.  */
++
++enum rtx_code
++xtensa_shlrd_which_direction (rtx op0, rtx op1)
++{
++  if (GET_CODE (op0) == ASHIFT && GET_CODE (op1) == LSHIFTRT)
++    return ASHIFT;	/* shld  */
++  if (GET_CODE (op0) == LSHIFTRT && GET_CODE (op1) == ASHIFT)
++    return LSHIFTRT;	/* shrd  */
++
++  return UNKNOWN;
++}
++
++
+ /* Implement TARGET_CANNOT_FORCE_CONST_MEM.  */
+ 
+ static bool
+@@ -2364,7 +2713,7 @@ static void
+ printx (FILE *file, signed int val)
+ {
+   /* Print a hexadecimal value in a nice way.  */
+-  if ((val > -0xa) && (val < 0xa))
++  if (IN_RANGE (val, -9, 9))
+     fprintf (file, "%d", val);
+   else if (val < 0)
+     fprintf (file, "-0x%x", -val);
+@@ -2379,7 +2728,7 @@ void
+ print_operand (FILE *file, rtx x, int letter)
+ {
+   if (!x)
+-    error ("PRINT_OPERAND null pointer");
++    error ("%<PRINT_OPERAND%> null pointer");
+ 
+   switch (letter)
+     {
+@@ -2424,17 +2773,11 @@ print_operand (FILE *file, rtx x, int letter)
+     case 'K':
+       if (GET_CODE (x) == CONST_INT)
+ 	{
+-	  int num_bits = 0;
+ 	  unsigned val = INTVAL (x);
+-	  while (val & 1)
+-	    {
+-	      num_bits += 1;
+-	      val = val >> 1;
+-	    }
+-	  if ((val != 0) || (num_bits == 0) || (num_bits > 16))
++	  if (!xtensa_mask_immediate (val))
+ 	    fatal_insn ("invalid mask", x);
+ 
+-	  fprintf (file, "%d", num_bits);
++	  fprintf (file, "%d", floor_log2 (val + 1));
+ 	}
+       else
+ 	output_operand_lossage ("invalid %%K value");
+@@ -2584,7 +2927,7 @@ void
+ print_operand_address (FILE *file, rtx addr)
+ {
+   if (!addr)
+-    error ("PRINT_OPERAND_ADDRESS, null pointer");
++    error ("%<PRINT_OPERAND_ADDRESS%>, null pointer");
+ 
+   switch (GET_CODE (addr))
+     {
+@@ -2750,7 +3093,7 @@ xtensa_call_save_reg(int regno)
+     return crtl->profile || !crtl->is_leaf || crtl->calls_eh_return ||
+       df_regs_ever_live_p (regno);
+ 
+-  if (crtl->calls_eh_return && regno >= 2 && regno < 4)
++  if (crtl->calls_eh_return && IN_RANGE (regno, 2, 3))
+     return true;
+ 
+   return !call_used_or_fixed_reg_p (regno) && df_regs_ever_live_p (regno);
+@@ -2870,7 +3213,7 @@ xtensa_expand_prologue (void)
+       int callee_save_size = cfun->machine->callee_save_size;
+ 
+       /* -128 is a limit of single addi instruction. */
+-      if (total_size > 0 && total_size <= 128)
++      if (IN_RANGE (total_size, 1, 128))
+ 	{
+ 	  insn = emit_insn (gen_addsi3 (stack_pointer_rtx, stack_pointer_rtx,
+ 					GEN_INT (-total_size)));
+@@ -2999,7 +3342,7 @@ xtensa_expand_prologue (void)
+ }
+ 
+ void
+-xtensa_expand_epilogue (void)
++xtensa_expand_epilogue (bool sibcall_p)
+ {
+   if (!TARGET_WINDOWED_ABI)
+     {
+@@ -3033,10 +3376,13 @@ xtensa_expand_epilogue (void)
+ 	  if (xtensa_call_save_reg(regno))
+ 	    {
+ 	      rtx x = gen_rtx_PLUS (Pmode, stack_pointer_rtx, GEN_INT (offset));
++	      rtx reg;
+ 
+ 	      offset -= UNITS_PER_WORD;
+-	      emit_move_insn (gen_rtx_REG (SImode, regno),
++	      emit_move_insn (reg = gen_rtx_REG (SImode, regno),
+ 			      gen_frame_mem (SImode, x));
++	      if (regno == A0_REG && sibcall_p)
++		emit_use (reg);
+ 	    }
+ 	}
+ 
+@@ -3071,7 +3417,8 @@ xtensa_expand_epilogue (void)
+ 				  EH_RETURN_STACKADJ_RTX));
+     }
+   cfun->machine->epilogue_done = true;
+-  emit_jump_insn (gen_return ());
++  if (!sibcall_p)
++    emit_jump_insn (gen_return ());
+ }
+ 
+ bool
+@@ -3697,7 +4044,7 @@ xtensa_multibss_section_type_flags (tree decl, const char *name, int reloc)
+ 	flags |= SECTION_BSS;  /* @nobits */
+       else
+ 	warning (0, "only uninitialized variables can be placed in a "
+-		 ".bss section");
++		 "%<.bss%> section");
+     }
+ 
+   return flags;
+@@ -3750,7 +4097,7 @@ xtensa_memory_move_cost (machine_mode mode ATTRIBUTE_UNUSED,
+ static bool
+ xtensa_rtx_costs (rtx x, machine_mode mode, int outer_code,
+ 		  int opno ATTRIBUTE_UNUSED,
+-		  int *total, bool speed ATTRIBUTE_UNUSED)
++		  int *total, bool speed)
+ {
+   int code = GET_CODE (x);
+ 
+@@ -3838,9 +4185,14 @@ xtensa_rtx_costs (rtx x, machine_mode mode, int outer_code,
+       return true;
+ 
+     case CLZ:
++    case CLRSB:
+       *total = COSTS_N_INSNS (TARGET_NSA ? 1 : 50);
+       return true;
+ 
++    case BSWAP:
++      *total = COSTS_N_INSNS (mode == HImode ? 3 : 5);
++      return true;
++
+     case NOT:
+       *total = COSTS_N_INSNS (mode == DImode ? 3 : 2);
+       return true;
+@@ -3864,13 +4216,16 @@ xtensa_rtx_costs (rtx x, machine_mode mode, int outer_code,
+       return true;
+ 
+     case ABS:
++    case NEG:
+       {
+ 	if (mode == SFmode)
+ 	  *total = COSTS_N_INSNS (TARGET_HARD_FLOAT ? 1 : 50);
+ 	else if (mode == DFmode)
+ 	  *total = COSTS_N_INSNS (50);
+-	else
++	else if (mode == DImode)
+ 	  *total = COSTS_N_INSNS (4);
++	else
++	  *total = COSTS_N_INSNS (1);
+ 	return true;
+       }
+ 
+@@ -3886,10 +4241,6 @@ xtensa_rtx_costs (rtx x, machine_mode mode, int outer_code,
+ 	return true;
+       }
+ 
+-    case NEG:
+-      *total = COSTS_N_INSNS (mode == DImode ? 4 : 2);
+-      return true;
+-
+     case MULT:
+       {
+ 	if (mode == SFmode)
+@@ -3929,11 +4280,11 @@ xtensa_rtx_costs (rtx x, machine_mode mode, int outer_code,
+     case UMOD:
+       {
+ 	if (mode == DImode)
+-	  *total = COSTS_N_INSNS (50);
++	  *total = COSTS_N_INSNS (speed ? 100 : 50);
+ 	else if (TARGET_DIV32)
+ 	  *total = COSTS_N_INSNS (32);
+ 	else
+-	  *total = COSTS_N_INSNS (50);
++	  *total = COSTS_N_INSNS (speed ? 100 : 50);
+ 	return true;
+       }
+ 
+@@ -3966,6 +4317,98 @@ xtensa_rtx_costs (rtx x, machine_mode mode, int outer_code,
+     }
+ }
+ 
++static bool
++xtensa_is_insn_L32R_p(const rtx_insn *insn)
++{
++  rtx x = PATTERN (insn);
++
++  if (GET_CODE (x) == SET)
++    {
++      x = XEXP (x, 1);
++      if (GET_CODE (x) == MEM)
++	{
++	  x = XEXP (x, 0);
++	  return (GET_CODE (x) == SYMBOL_REF || CONST_INT_P (x))
++		 && CONSTANT_POOL_ADDRESS_P (x);
++	}
++    }
++
++  return false;
++}
++
++/* Compute a relative costs of RTL insns.  This is necessary in order to
++   achieve better RTL insn splitting/combination result.  */
++
++static int
++xtensa_insn_cost (rtx_insn *insn, bool speed)
++{
++  if (!(recog_memoized (insn) < 0))
++    {
++      int len = get_attr_length (insn), n = (len + 2) / 3;
++
++      if (len == 0)
++	return COSTS_N_INSNS (0);
++
++      if (speed)  /* For speed cost.  */
++	{
++	  /* "L32R" may be particular slow (implementation-dependent).  */
++	  if (xtensa_is_insn_L32R_p (insn))
++	    return COSTS_N_INSNS (1 + xtensa_extra_l32r_costs);
++
++	  /* Cost based on the pipeline model.  */
++	  switch (get_attr_type (insn))
++	    {
++	    case TYPE_STORE:
++	    case TYPE_MOVE:
++	    case TYPE_ARITH:
++	    case TYPE_MULTI:
++	    case TYPE_NOP:
++	    case TYPE_FSTORE:
++	      return COSTS_N_INSNS (n);
++
++	    case TYPE_LOAD:
++	      return COSTS_N_INSNS (n - 1 + 2);
++
++	    case TYPE_JUMP:
++	    case TYPE_CALL:
++	      return COSTS_N_INSNS (n - 1 + 3);
++
++	    case TYPE_FCONV:
++	    case TYPE_FLOAD:
++	    case TYPE_MUL16:
++	    case TYPE_MUL32:
++	    case TYPE_RSR:
++	      return COSTS_N_INSNS (n * 2);
++
++	    case TYPE_FMADD:
++	      return COSTS_N_INSNS (n * 4);
++
++	    case TYPE_DIV32:
++	      return COSTS_N_INSNS (n * 16);
++
++	    default:
++	      break;
++	    }
++	}
++      else  /* For size cost.  */
++	{
++	  /* Cost based on the instruction length.  */
++	  if (get_attr_type (insn) != TYPE_UNKNOWN)
++	    {
++	      /* "L32R" itself plus constant in litpool.  */
++	      if (xtensa_is_insn_L32R_p (insn))
++		return COSTS_N_INSNS (2) + 1;
++
++	      /* Consider ".n" short instructions.  */
++	      return COSTS_N_INSNS (n) - (n * 3 - len);
++	    }
++	}
++    }
++
++  /* Fall back.  */
++  return pattern_cost (PATTERN (insn), speed);
++}
++
+ /* Worker function for TARGET_RETURN_IN_MEMORY.  */
+ 
+ static bool
+@@ -4491,4 +4934,16 @@ xtensa_asan_shadow_offset (void)
+   return HOST_WIDE_INT_UC (0x10000000);
+ }
+ 
++/* Implement TARGET_FUNCTION_OK_FOR_SIBCALL.  */
++static bool
++xtensa_function_ok_for_sibcall (tree decl ATTRIBUTE_UNUSED, tree exp ATTRIBUTE_UNUSED)
++{
++  /* Do not allow sibcalls if the Windowed Register Option is
++     configured.  */
++  if (TARGET_WINDOWED_ABI)
++    return false;
++
++  return true;
++}
++
+ #include "gt-xtensa.h"
+diff --git a/gcc/config/xtensa/xtensa.h b/gcc/config/xtensa/xtensa.h
+index fa86a245e..3e9cbc943 100644
+--- a/gcc/config/xtensa/xtensa.h
++++ b/gcc/config/xtensa/xtensa.h
+@@ -74,6 +74,11 @@ along with GCC; see the file COPYING3.  If not see
+ #define HAVE_AS_TLS 0
+ #endif
+ 
++/* Define this if the target has no hardware divide instructions.  */
++#if !TARGET_DIV32
++#define TARGET_HAS_NO_HW_DIVIDE
++#endif
++
+ 
+ /* Target CPU builtins.  */
+ #define TARGET_CPU_CPP_BUILTINS()					\
+@@ -488,7 +493,7 @@ enum reg_class
+    used for this purpose since all function arguments are pushed on
+    the stack.  */
+ #define FUNCTION_ARG_REGNO_P(N)						\
+-  ((N) >= GP_OUTGOING_ARG_FIRST && (N) <= GP_OUTGOING_ARG_LAST)
++  IN_RANGE ((N), GP_OUTGOING_ARG_FIRST, GP_OUTGOING_ARG_LAST)
+ 
+ /* Record the number of argument words seen so far, along with a flag to
+    indicate whether these are incoming arguments.  (FUNCTION_INCOMING_ARG
+diff --git a/gcc/config/xtensa/xtensa.md b/gcc/config/xtensa/xtensa.md
+index 2a8e59ee9..124548dfe 100644
+--- a/gcc/config/xtensa/xtensa.md
++++ b/gcc/config/xtensa/xtensa.md
+@@ -25,6 +25,7 @@
+   (A7_REG		7)
+   (A8_REG		8)
+   (A9_REG		9)
++  (A10_REG		10)
+ 
+   (UNSPEC_NOP		2)
+   (UNSPEC_PLT		3)
+@@ -83,6 +84,13 @@
+ ;; the same template.
+ (define_mode_iterator HQI [HI QI])
+ 
++;; This code iterator is for *shlrd and its variants.
++(define_code_iterator ior_op [ior plus])
++
++;; This mode iterator allows the DC and SC patterns to be defined from
++;; the same template.
++(define_mode_iterator DSC [DC SC])
++
+ 
+ ;; Attributes.
+ 
+@@ -98,7 +106,10 @@
+ 
+ ;; Describe a user's asm statement.
+ (define_asm_attributes
+-  [(set_attr "type" "multi")])
++  [(set_attr "type"	"multi")
++   (set_attr "mode"	"none")
++   (set_attr "length"	"3")])  ;; Should be the maximum possible length
++				;; of a single machine instruction.
+ 
+ 
+ ;; Pipeline model.
+@@ -224,20 +235,42 @@
+ 
+ ;; Multiplication.
+ 
+-(define_expand "<u>mulsidi3"
++(define_expand "mulsidi3"
+   [(set (match_operand:DI 0 "register_operand")
+-	(mult:DI (any_extend:DI (match_operand:SI 1 "register_operand"))
+-		 (any_extend:DI (match_operand:SI 2 "register_operand"))))]
++	(mult:DI (sign_extend:DI (match_operand:SI 1 "register_operand"))
++		 (sign_extend:DI (match_operand:SI 2 "register_operand"))))]
+   "TARGET_MUL32_HIGH"
+ {
+   rtx temp = gen_reg_rtx (SImode);
+   emit_insn (gen_mulsi3 (temp, operands[1], operands[2]));
+-  emit_insn (gen_<u>mulsi3_highpart (gen_highpart (SImode, operands[0]),
+-				     operands[1], operands[2]));
++  emit_insn (gen_mulsi3_highpart (gen_highpart (SImode, operands[0]),
++				  operands[1], operands[2]));
+   emit_insn (gen_movsi (gen_lowpart (SImode, operands[0]), temp));
+   DONE;
+ })
+ 
++(define_expand "umulsidi3"
++  [(set (match_operand:DI 0 "register_operand")
++	(mult:DI (zero_extend:DI (match_operand:SI 1 "register_operand"))
++		 (zero_extend:DI (match_operand:SI 2 "register_operand"))))]
++  ""
++{
++  if (TARGET_MUL32_HIGH)
++    {
++      rtx temp = gen_reg_rtx (SImode);
++      emit_insn (gen_mulsi3 (temp, operands[1], operands[2]));
++      emit_insn (gen_umulsi3_highpart (gen_highpart (SImode, operands[0]),
++				       operands[1], operands[2]));
++      emit_insn (gen_movsi (gen_lowpart (SImode, operands[0]), temp));
++    }
++  else
++    emit_library_call_value (gen_rtx_SYMBOL_REF (Pmode, "__umulsidi3"),
++			     operands[0], LCT_NORMAL, DImode,
++			     operands[1], SImode,
++			     operands[2], SImode);
++   DONE;
++})
++
+ (define_insn "<u>mulsi3_highpart"
+   [(set (match_operand:SI 0 "register_operand" "=a")
+ 	(truncate:SI
+@@ -261,30 +294,16 @@
+    (set_attr "mode"	"SI")
+    (set_attr "length"	"3")])
+ 
+-(define_insn "mulhisi3"
+-  [(set (match_operand:SI 0 "register_operand" "=C,A")
+-	(mult:SI (sign_extend:SI
+-		  (match_operand:HI 1 "register_operand" "%r,r"))
+-		 (sign_extend:SI
+-		  (match_operand:HI 2 "register_operand" "r,r"))))]
+-  "TARGET_MUL16 || TARGET_MAC16"
+-  "@
+-   mul16s\t%0, %1, %2
+-   mul.aa.ll\t%1, %2"
+-  [(set_attr "type"	"mul16,mac16")
+-   (set_attr "mode"	"SI")
+-   (set_attr "length"	"3,3")])
+-
+-(define_insn "umulhisi3"
++(define_insn "<u>mulhisi3"
+   [(set (match_operand:SI 0 "register_operand" "=C,A")
+-	(mult:SI (zero_extend:SI
++	(mult:SI (any_extend:SI
+ 		  (match_operand:HI 1 "register_operand" "%r,r"))
+-		 (zero_extend:SI
++		 (any_extend:SI
+ 		  (match_operand:HI 2 "register_operand" "r,r"))))]
+   "TARGET_MUL16 || TARGET_MAC16"
+   "@
+-   mul16u\t%0, %1, %2
+-   umul.aa.ll\t%1, %2"
++   mul16<su>\t%0, %1, %2
++   <u>mul.aa.ll\t%1, %2"
+   [(set_attr "type"	"mul16,mac16")
+    (set_attr "mode"	"SI")
+    (set_attr "length"	"3,3")])
+@@ -429,7 +448,17 @@
+    (set_attr "length"	"3")])
+ 
+ 
+-;; Count leading/trailing zeros and find first bit.
++;; Count redundant leading sign bits and leading/trailing zeros,
++;; and find first bit.
++
++(define_insn "clrsbsi2"
++  [(set (match_operand:SI 0 "register_operand" "=a")
++	(clrsb:SI (match_operand:SI 1 "register_operand" "r")))]
++  "TARGET_NSA"
++  "nsa\t%0, %1"
++  [(set_attr "type"	"arith")
++   (set_attr "mode"	"SI")
++   (set_attr "length"	"3")])
+ 
+ (define_insn "clzsi2"
+   [(set (match_operand:SI 0 "register_operand" "=a")
+@@ -471,23 +500,78 @@
+ 
+ ;; Byte swap.
+ 
+-(define_insn "bswapsi2"
+-  [(set (match_operand:SI 0 "register_operand" "=&a")
+-	(bswap:SI (match_operand:SI 1 "register_operand" "r")))]
+-  "!optimize_size"
+-  "ssai\t8\;srli\t%0, %1, 16\;src\t%0, %0, %1\;src\t%0, %0, %0\;src\t%0, %1, %0"
+-  [(set_attr "type"	"arith")
+-   (set_attr "mode"	"SI")
+-   (set_attr "length"	"15")])
++(define_insn "bswaphi2"
++  [(set (match_operand:HI 0 "register_operand" "=a")
++	(bswap:HI (match_operand:HI 1 "register_operand" "r")))
++   (clobber (match_scratch:HI 2 "=&a"))]
++  ""
++  "extui\t%2, %1, 8, 8\;slli\t%0, %1, 8\;or\t%0, %0, %2"
++   [(set_attr "type"	"arith")
++    (set_attr "mode"	"HI")
++    (set_attr "length"	"9")])
+ 
+-(define_insn "bswapdi2"
+-  [(set (match_operand:DI 0 "register_operand" "=&a")
+-	(bswap:DI (match_operand:DI 1 "register_operand" "r")))]
+-  "!optimize_size"
+-  "ssai\t8\;srli\t%0, %D1, 16\;src\t%0, %0, %D1\;src\t%0, %0, %0\;src\t%0, %D1, %0\;srli\t%D0, %1, 16\;src\t%D0, %D0, %1\;src\t%D0, %D0, %D0\;src\t%D0, %1, %D0"
+-  [(set_attr "type"	"arith")
+-   (set_attr "mode"	"DI")
+-   (set_attr "length"	"27")])
++(define_expand "bswapsi2"
++  [(set (match_operand:SI 0 "register_operand" "")
++        (bswap:SI (match_operand:SI 1 "register_operand" "")))]
++  "!optimize_debug && optimize > 1"
++{
++  /* GIMPLE manual byte-swapping recognition is now activated.
++     For both built-in and manual bswaps, emit corresponding library call
++     if optimizing for size, or a series of dedicated machine instructions
++     if otherwise.  */
++  if (optimize_size)
++    emit_library_call_value (optab_libfunc (bswap_optab, SImode),
++			     operands[0], LCT_NORMAL, SImode,
++			     operands[1], SImode);
++  else
++    emit_insn (gen_bswapsi2_internal (operands[0], operands[1]));
++  DONE;
++})
++
++(define_insn "bswapsi2_internal"
++  [(set (match_operand:SI 0 "register_operand" "=a,&a")
++	(bswap:SI (match_operand:SI 1 "register_operand" "0,r")))
++   (clobber (match_scratch:SI 2 "=&a,X"))]
++  "!optimize_debug && optimize > 1 && !optimize_size"
++{
++  rtx_insn *prev_insn = prev_nonnote_nondebug_insn (insn);
++  const char *init = "ssai\t8\;";
++  static char result[128];
++  if (prev_insn && NONJUMP_INSN_P (prev_insn))
++    {
++      rtx x = PATTERN (prev_insn);
++      if (GET_CODE (x) == PARALLEL && XVECLEN (x, 0) == 2
++	  && GET_CODE (XVECEXP (x, 0, 0)) == SET
++	  && GET_CODE (XVECEXP (x, 0, 1)) == CLOBBER)
++	{
++	  x = XEXP (XVECEXP (x, 0, 0), 1);
++	  if (GET_CODE (x) == BSWAP && GET_MODE (x) == SImode)
++	    init = "";
++	}
++    }
++  sprintf (result,
++	   (which_alternative == 0)
++	   ? "%s" "srli\t%%2, %%1, 16\;src\t%%2, %%2, %%1\;src\t%%2, %%2, %%2\;src\t%%0, %%1, %%2"
++	   : "%s" "srli\t%%0, %%1, 16\;src\t%%0, %%0, %%1\;src\t%%0, %%0, %%0\;src\t%%0, %%1, %%0",
++	   init);
++  return result;
++}
++   [(set_attr "type"	"arith,arith")
++    (set_attr "mode"	"SI")
++    (set_attr "length"	"15,15")])
++
++(define_expand "bswapdi2"
++  [(set (match_operand:DI 0 "register_operand" "")
++	(bswap:DI (match_operand:DI 1 "register_operand" "")))]
++  "!optimize_debug && optimize > 1 && optimize_size"
++{
++  /* Replace with a single DImode library call.
++     Without this, two SImode library calls are emitted.  */
++  emit_library_call_value (optab_libfunc (bswap_optab, DImode),
++			   operands[0], LCT_NORMAL, DImode,
++			   operands[1], DImode);
++  DONE;
++})
+ 
+ 
+ ;; Negation and one's complement.
+@@ -501,16 +585,26 @@
+    (set_attr "mode"	"SI")
+    (set_attr "length"	"3")])
+ 
+-(define_expand "one_cmplsi2"
+-  [(set (match_operand:SI 0 "register_operand" "")
+-	(not:SI (match_operand:SI 1 "register_operand" "")))]
++(define_insn_and_split "one_cmplsi2"
++  [(set (match_operand:SI 0 "register_operand" "=a")
++	(not:SI (match_operand:SI 1 "register_operand" "r")))]
+   ""
++  "#"
++  "&& can_create_pseudo_p ()"
++  [(set (match_dup 2)
++	(const_int -1))
++   (set (match_dup 0)
++	(xor:SI (match_dup 1)
++		(match_dup 2)))]
+ {
+-  rtx temp = gen_reg_rtx (SImode);
+-  emit_insn (gen_movsi (temp, constm1_rtx));
+-  emit_insn (gen_xorsi3 (operands[0], temp, operands[1]));
+-  DONE;
+-})
++  operands[2] = gen_reg_rtx (SImode);
++}
++  [(set_attr "type"	"arith")
++   (set_attr "mode"	"SI")
++   (set (attr "length")
++	(if_then_else (match_test "TARGET_DENSITY")
++		      (const_int 5)
++		      (const_int 6)))])
+ 
+ (define_insn "negsf2"
+   [(set (match_operand:SF 0 "register_operand" "=f")
+@@ -536,6 +630,103 @@
+    (set_attr "mode"	"SI")
+    (set_attr "length"	"3,3")])
+ 
++(define_insn_and_split "*andsi3_bitcmpl"
++  [(set (match_operand:SI 0 "register_operand" "=a")
++	(and:SI (not:SI (match_operand:SI 1 "register_operand" "r"))
++		(match_operand:SI 2 "register_operand" "r")))]
++  ""
++  "#"
++  "&& can_create_pseudo_p ()"
++  [(set (match_dup 3)
++	(and:SI (match_dup 1)
++		(match_dup 2)))
++   (set (match_dup 0)
++	(xor:SI (match_dup 3)
++		(match_dup 2)))]
++{
++  operands[3] = gen_reg_rtx (SImode);
++}
++  [(set_attr "type"	"arith")
++   (set_attr "mode"	"SI")
++   (set_attr "length"	"6")])
++
++(define_insn_and_split "*andsi3_const_pow2_minus_one"
++  [(set (match_operand:SI 0 "register_operand" "=a")
++	(and:SI (match_operand:SI 1 "register_operand" "r")
++		(match_operand:SI 2 "const_int_operand" "i")))]
++  "IN_RANGE (exact_log2 (INTVAL (operands[2]) + 1), 17, 31)"
++  "#"
++  "&& 1"
++  [(set (match_dup 0)
++	(ashift:SI (match_dup 1)
++		   (match_dup 2)))
++   (set (match_dup 0)
++	(lshiftrt:SI (match_dup 0)
++		     (match_dup 2)))]
++{
++  operands[2] = GEN_INT (32 - floor_log2 (INTVAL (operands[2]) + 1));
++}
++  [(set_attr "type"	"arith")
++   (set_attr "mode"	"SI")
++   (set (attr "length")
++	(if_then_else (match_test "TARGET_DENSITY
++				   && INTVAL (operands[2]) == 0x7FFFFFFF")
++		      (const_int 5)
++		      (const_int 6)))])
++
++(define_insn_and_split "*andsi3_const_negative_pow2"
++  [(set (match_operand:SI 0 "register_operand" "=a")
++	(and:SI (match_operand:SI 1 "register_operand" "r")
++		(match_operand:SI 2 "const_int_operand" "i")))]
++  "IN_RANGE (exact_log2 (-INTVAL (operands[2])), 12, 31)"
++  "#"
++  "&& 1"
++  [(set (match_dup 0)
++	(lshiftrt:SI (match_dup 1)
++		     (match_dup 2)))
++   (set (match_dup 0)
++	(ashift:SI (match_dup 0)
++		   (match_dup 2)))]
++{
++  operands[2] = GEN_INT (floor_log2 (-INTVAL (operands[2])));
++}
++  [(set_attr "type"	"arith")
++   (set_attr "mode"	"SI")
++   (set_attr "length"	"6")])
++
++(define_insn_and_split "*andsi3_const_shifted_mask"
++  [(set (match_operand:SI 0 "register_operand" "=a")
++	(and:SI (match_operand:SI 1 "register_operand" "r")
++		(match_operand:SI 2 "shifted_mask_operand" "i")))]
++  "! xtensa_simm12b (INTVAL (operands[2]))"
++  "#"
++  "&& 1"
++  [(set (match_dup 0)
++	(zero_extract:SI (match_dup 1)
++			 (match_dup 3)
++			 (match_dup 4)))
++   (set (match_dup 0)
++	(ashift:SI (match_dup 0)
++		   (match_dup 2)))]
++{
++  HOST_WIDE_INT mask = INTVAL (operands[2]);
++  int shift = ctz_hwi (mask);
++  int mask_size = floor_log2 (((uint32_t)mask >> shift) + 1);
++  int mask_pos = shift;
++  if (BITS_BIG_ENDIAN)
++    mask_pos = (32 - (mask_size + shift)) & 0x1f;
++  operands[2] = GEN_INT (shift);
++  operands[3] = GEN_INT (mask_size);
++  operands[4] = GEN_INT (mask_pos);
++}
++  [(set_attr "type"	"arith")
++   (set_attr "mode"	"SI")
++   (set (attr "length")
++	(if_then_else (match_test "TARGET_DENSITY
++				   && ctz_hwi (INTVAL (operands[2])) == 1")
++		      (const_int 5)
++		      (const_int 6)))])
++
+ (define_insn "iorsi3"
+   [(set (match_operand:SI 0 "register_operand" "=a")
+ 	(ior:SI (match_operand:SI 1 "register_operand" "%r")
+@@ -634,7 +825,7 @@
+ 
+ ;; Field extract instructions.
+ 
+-(define_expand "extv"
++(define_expand "extvsi"
+   [(set (match_operand:SI 0 "register_operand" "")
+ 	(sign_extract:SI (match_operand:SI 1 "register_operand" "")
+ 			 (match_operand:SI 2 "const_int_operand" "")
+@@ -649,12 +840,12 @@
+   if (!lsbitnum_operand (operands[3], SImode))
+     FAIL;
+ 
+-  emit_insn (gen_extv_internal (operands[0], operands[1],
+-				operands[2], operands[3]));
++  emit_insn (gen_extvsi_internal (operands[0], operands[1],
++				  operands[2], operands[3]));
+   DONE;
+ })
+ 
+-(define_insn "extv_internal"
++(define_insn "extvsi_internal"
+   [(set (match_operand:SI 0 "register_operand" "=a")
+ 	(sign_extract:SI (match_operand:SI 1 "register_operand" "r")
+ 			 (match_operand:SI 2 "sext_fldsz_operand" "i")
+@@ -669,7 +860,7 @@
+    (set_attr "mode"	"SI")
+    (set_attr "length"	"3")])
+ 
+-(define_expand "extzv"
++(define_expand "extzvsi"
+   [(set (match_operand:SI 0 "register_operand" "")
+ 	(zero_extract:SI (match_operand:SI 1 "register_operand" "")
+ 			 (match_operand:SI 2 "const_int_operand" "")
+@@ -678,12 +869,12 @@
+ {
+   if (!extui_fldsz_operand (operands[2], SImode))
+     FAIL;
+-  emit_insn (gen_extzv_internal (operands[0], operands[1],
+-				 operands[2], operands[3]));
++  emit_insn (gen_extzvsi_internal (operands[0], operands[1],
++				   operands[2], operands[3]));
+   DONE;
+ })
+ 
+-(define_insn "extzv_internal"
++(define_insn "extzvsi_internal"
+   [(set (match_operand:SI 0 "register_operand" "=a")
+ 	(zero_extract:SI (match_operand:SI 1 "register_operand" "r")
+ 			 (match_operand:SI 2 "extui_fldsz_operand" "i")
+@@ -757,11 +948,14 @@
+ 	 because of offering further optimization opportunities.  */
+       if (register_operand (operands[0], DImode))
+ 	{
+-	  rtx first, second;
+-
+-	  split_double (operands[1], &first, &second);
+-	  emit_insn (gen_movsi (gen_lowpart (SImode, operands[0]), first));
+-	  emit_insn (gen_movsi (gen_highpart (SImode, operands[0]), second));
++	  rtx lowpart, highpart;
++
++	  if (TARGET_BIG_ENDIAN)
++	    split_double (operands[1], &highpart, &lowpart);
++	  else
++	    split_double (operands[1], &lowpart, &highpart);
++	  emit_insn (gen_movsi (gen_lowpart (SImode, operands[0]), lowpart));
++	  emit_insn (gen_movsi (gen_highpart (SImode, operands[0]), highpart));
+ 	  DONE;
+ 	}
+ 
+@@ -782,7 +976,7 @@
+   "register_operand (operands[0], DImode)
+    || register_operand (operands[1], DImode)"
+   "#"
+-  "reload_completed"
++  "&& reload_completed"
+   [(set (match_dup 0) (match_dup 2))
+    (set (match_dup 1) (match_dup 3))]
+ {
+@@ -831,6 +1025,19 @@
+    (set_attr "mode"	"SI")
+    (set_attr "length"	"2,2,2,2,2,2,3,3,3,3,6,3,3,3,3,3")])
+ 
++(define_split
++  [(set (match_operand:SI 0 "register_operand")
++	(match_operand:SI 1 "constantpool_operand"))]
++  "! optimize_debug && reload_completed"
++  [(const_int 0)]
++{
++  rtx x = avoid_constant_pool_reference (operands[1]);
++  if (! CONST_INT_P (x))
++    FAIL;
++  if (! xtensa_constantsynth (operands[0], INTVAL (x)))
++    emit_move_insn (operands[0], x);
++})
++
+ ;; 16-bit Integer moves
+ 
+ (define_expand "movhi"
+@@ -1035,6 +1242,43 @@
+    (set_attr "mode"	"SF")
+    (set_attr "length"	"3")])
+ 
++(define_split
++  [(set (match_operand:SF 0 "register_operand")
++	(match_operand:SF 1 "constantpool_operand"))]
++  "! optimize_debug && reload_completed"
++  [(const_int 0)]
++{
++  int i = 0;
++  rtx x = XEXP (operands[1], 0);
++  long l[2];
++  if (GET_CODE (x) == SYMBOL_REF
++      && CONSTANT_POOL_ADDRESS_P (x))
++    x = get_pool_constant (x);
++  else if (GET_CODE (x) == CONST)
++    {
++      x = XEXP (x, 0);
++      gcc_assert (GET_CODE (x) == PLUS
++		  && GET_CODE (XEXP (x, 0)) == SYMBOL_REF
++		  && CONSTANT_POOL_ADDRESS_P (XEXP (x, 0))
++		  && CONST_INT_P (XEXP (x, 1)));
++      i = INTVAL (XEXP (x, 1));
++      gcc_assert (i == 0 || i == 4);
++      i /= 4;
++      x = get_pool_constant (XEXP (x, 0));
++    }
++  else
++    gcc_unreachable ();
++  if (GET_MODE (x) == SFmode)
++    REAL_VALUE_TO_TARGET_SINGLE (*CONST_DOUBLE_REAL_VALUE (x), l[0]);
++  else if (GET_MODE (x) == DFmode)
++    REAL_VALUE_TO_TARGET_DOUBLE (*CONST_DOUBLE_REAL_VALUE (x), l);
++  else
++    FAIL;
++  x = gen_rtx_REG (SImode, REGNO (operands[0]));
++  if (! xtensa_constantsynth (x, l[i]))
++    emit_move_insn (x, GEN_INT (l[i]));
++})
++
+ ;; 64-bit floating point moves
+ 
+ (define_expand "movdf"
+@@ -1058,7 +1302,7 @@
+   "register_operand (operands[0], DFmode)
+    || register_operand (operands[1], DFmode)"
+   "#"
+-  "reload_completed"
++  "&& reload_completed"
+   [(set (match_dup 0) (match_dup 2))
+    (set (match_dup 1) (match_dup 3))]
+ {
+@@ -1085,6 +1329,22 @@
+   DONE;
+ })
+ 
++;; Block sets
++
++(define_expand "setmemsi"
++  [(match_operand:BLK 0 "memory_operand")
++   (match_operand:SI 1 "")
++   (match_operand:SI 2 "")
++   (match_operand:SI 3 "const_int_operand")]
++  "!optimize_debug && optimize"
++{
++  if (xtensa_expand_block_set_unrolled_loop (operands))
++    DONE;
++  if (xtensa_expand_block_set_small_loop (operands))
++    DONE;
++  FAIL;
++})
++
+ 
+ ;; Shift instructions.
+ 
+@@ -1097,16 +1357,6 @@
+   operands[1] = xtensa_copy_incoming_a7 (operands[1]);
+ })
+ 
+-(define_insn "*ashlsi3_1"
+-  [(set (match_operand:SI 0 "register_operand" "=a")
+-	(ashift:SI (match_operand:SI 1 "register_operand" "r")
+-		   (const_int 1)))]
+-  "TARGET_DENSITY"
+-  "add.n\t%0, %1, %1"
+-  [(set_attr "type"	"arith")
+-   (set_attr "mode"	"SI")
+-   (set_attr "length"	"2")])
+-
+ (define_insn "ashlsi3_internal"
+   [(set (match_operand:SI 0 "register_operand" "=a,a")
+ 	(ashift:SI (match_operand:SI 1 "register_operand" "r,r")
+@@ -1119,16 +1369,14 @@
+    (set_attr "mode"	"SI")
+    (set_attr "length"	"3,6")])
+ 
+-(define_insn "*ashlsi3_3x"
+-  [(set (match_operand:SI 0 "register_operand" "=a")
+-	(ashift:SI (match_operand:SI 1 "register_operand" "r")
+-		   (ashift:SI (match_operand:SI 2 "register_operand" "r")
+-			      (const_int 3))))]
+-  ""
+-  "ssa8b\t%2\;sll\t%0, %1"
+-  [(set_attr "type"	"arith")
+-   (set_attr "mode"	"SI")
+-   (set_attr "length"	"6")])
++(define_split
++  [(set (match_operand:SI 0 "register_operand")
++	(ashift:SI (match_operand:SI 1 "register_operand")
++		   (const_int 1)))]
++  "TARGET_DENSITY"
++  [(set (match_dup 0)
++	(plus:SI (match_dup 1)
++		 (match_dup 1)))])
+ 
+ (define_insn "ashrsi3"
+   [(set (match_operand:SI 0 "register_operand" "=a,a")
+@@ -1142,17 +1390,6 @@
+    (set_attr "mode"	"SI")
+    (set_attr "length"	"3,6")])
+ 
+-(define_insn "*ashrsi3_3x"
+-  [(set (match_operand:SI 0 "register_operand" "=a")
+-	(ashiftrt:SI (match_operand:SI 1 "register_operand" "r")
+-		     (ashift:SI (match_operand:SI 2 "register_operand" "r")
+-				(const_int 3))))]
+-  ""
+-  "ssa8l\t%2\;sra\t%0, %1"
+-  [(set_attr "type"	"arith")
+-   (set_attr "mode"	"SI")
+-   (set_attr "length"	"6")])
+-
+ (define_insn "lshrsi3"
+   [(set (match_operand:SI 0 "register_operand" "=a,a")
+ 	(lshiftrt:SI (match_operand:SI 1 "register_operand" "r,r")
+@@ -1162,9 +1399,9 @@
+   if (which_alternative == 0)
+     {
+       if ((INTVAL (operands[2]) & 0x1f) < 16)
+-        return "srli\t%0, %1, %R2";
++	return "srli\t%0, %1, %R2";
+       else
+-      	return "extui\t%0, %1, %R2, %L2";
++	return "extui\t%0, %1, %R2, %L2";
+     }
+   return "ssr\t%2\;srl\t%0, %1";
+ }
+@@ -1172,13 +1409,170 @@
+    (set_attr "mode"	"SI")
+    (set_attr "length"	"3,6")])
+ 
+-(define_insn "*lshrsi3_3x"
++(define_insn "*shift_per_byte"
+   [(set (match_operand:SI 0 "register_operand" "=a")
+-	(lshiftrt:SI (match_operand:SI 1 "register_operand" "r")
+-		     (ashift:SI (match_operand:SI 2 "register_operand" "r")
+-				(const_int 3))))]
++	(match_operator:SI 3 "xtensa_shift_per_byte_operator"
++		[(match_operand:SI 1 "register_operand" "r")
++		 (ashift:SI (match_operand:SI 2 "register_operand" "r")
++			    (const_int 3))]))]
++  "!optimize_debug && optimize"
++{
++  switch (GET_CODE (operands[3]))
++    {
++    case ASHIFT:	return "ssa8b\t%2\;sll\t%0, %1";
++    case ASHIFTRT:	return "ssa8l\t%2\;sra\t%0, %1";
++    case LSHIFTRT:	return "ssa8l\t%2\;srl\t%0, %1";
++    default:		gcc_unreachable ();
++    }
++}
++  [(set_attr "type"	"arith")
++   (set_attr "mode"	"SI")
++   (set_attr "length"	"6")])
++
++(define_insn_and_split "*shift_per_byte_omit_AND_0"
++  [(set (match_operand:SI 0 "register_operand" "=a")
++	(match_operator:SI 4 "xtensa_shift_per_byte_operator"
++		[(match_operand:SI 1 "register_operand" "r")
++		 (and:SI (ashift:SI (match_operand:SI 2 "register_operand" "r")
++				    (const_int 3))
++			 (match_operand:SI 3 "const_int_operand" "i"))]))]
++  "!optimize_debug && optimize
++   && (INTVAL (operands[3]) & 0x1f) == 3 << 3"
++  "#"
++  "&& 1"
++  [(set (match_dup 0)
++	(match_op_dup 4
++		[(match_dup 1)
++		 (ashift:SI (match_dup 2)
++			    (const_int 3))]))]
++  ""
++  [(set_attr "type"	"arith")
++   (set_attr "mode"	"SI")
++   (set_attr "length"	"6")])
++
++(define_insn_and_split "*shift_per_byte_omit_AND_1"
++  [(set (match_operand:SI 0 "register_operand" "=a")
++	(match_operator:SI 4 "xtensa_shift_per_byte_operator"
++		[(match_operand:SI 1 "register_operand" "r")
++		 (neg:SI (and:SI (ashift:SI (match_operand:SI 2 "register_operand" "r")
++					    (const_int 3))
++				 (match_operand:SI 3 "const_int_operand" "i")))]))]
++  "!optimize_debug && optimize
++   && (INTVAL (operands[3]) & 0x1f) == 3 << 3"
++  "#"
++  "&& can_create_pseudo_p ()"
++  [(set (match_dup 5)
++	(neg:SI (match_dup 2)))
++   (set (match_dup 0)
++	(match_op_dup 4
++		[(match_dup 1)
++		 (ashift:SI (match_dup 5)
++			    (const_int 3))]))]
++{
++  operands[5] = gen_reg_rtx (SImode);
++}
++  [(set_attr "type"	"arith")
++   (set_attr "mode"	"SI")
++   (set_attr "length"	"9")])
++
++(define_insn "*shlrd_reg_<code>"
++  [(set (match_operand:SI 0 "register_operand" "=a")
++	(ior_op:SI (match_operator:SI 4 "logical_shift_operator"
++			[(match_operand:SI 1 "register_operand" "r")
++			 (match_operand:SI 2 "register_operand" "r")])
++		   (match_operator:SI 5 "logical_shift_operator"
++			[(match_operand:SI 3 "register_operand" "r")
++			 (neg:SI (match_dup 2))])))]
++  "!optimize_debug && optimize
++   && xtensa_shlrd_which_direction (operands[4], operands[5]) != UNKNOWN"
++{
++  switch (xtensa_shlrd_which_direction (operands[4], operands[5]))
++    {
++    case ASHIFT:	return "ssl\t%2\;src\t%0, %1, %3";
++    case LSHIFTRT:	return "ssr\t%2\;src\t%0, %3, %1";
++    default:		gcc_unreachable ();
++    }
++}
++  [(set_attr "type"	"arith")
++   (set_attr "mode"	"SI")
++   (set_attr "length"	"6")])
++
++(define_insn "*shlrd_const_<code>"
++  [(set (match_operand:SI 0 "register_operand" "=a")
++	(ior_op:SI (match_operator:SI 5 "logical_shift_operator"
++			[(match_operand:SI 1 "register_operand" "r")
++			 (match_operand:SI 3 "const_int_operand" "i")])
++		   (match_operator:SI 6 "logical_shift_operator"
++			[(match_operand:SI 2 "register_operand" "r")
++			 (match_operand:SI 4 "const_int_operand" "i")])))]
++  "!optimize_debug && optimize
++   && xtensa_shlrd_which_direction (operands[5], operands[6]) != UNKNOWN
++   && IN_RANGE (INTVAL (operands[3]), 1, 31)
++   && IN_RANGE (INTVAL (operands[4]), 1, 31)
++   && INTVAL (operands[3]) + INTVAL (operands[4]) == 32"
++{
++  switch (xtensa_shlrd_which_direction (operands[5], operands[6]))
++    {
++    case ASHIFT:	return "ssai\t%L3\;src\t%0, %1, %2";
++    case LSHIFTRT:	return "ssai\t%R3\;src\t%0, %2, %1";
++    default:		gcc_unreachable ();
++    }
++}
++  [(set_attr "type"	"arith")
++   (set_attr "mode"	"SI")
++   (set_attr "length"	"6")])
++
++(define_insn "*shlrd_per_byte_<code>"
++  [(set (match_operand:SI 0 "register_operand" "=a")
++	(ior_op:SI (match_operator:SI 4 "logical_shift_operator"
++			[(match_operand:SI 1 "register_operand" "r")
++			 (ashift:SI (match_operand:SI 2 "register_operand" "r")
++				    (const_int 3))])
++		   (match_operator:SI 5 "logical_shift_operator"
++			[(match_operand:SI 3 "register_operand" "r")
++			 (neg:SI (ashift:SI (match_dup 2)
++					    (const_int 3)))])))]
++  "!optimize_debug && optimize
++   && xtensa_shlrd_which_direction (operands[4], operands[5]) != UNKNOWN"
++{
++  switch (xtensa_shlrd_which_direction (operands[4], operands[5]))
++    {
++    case ASHIFT:	return "ssa8b\t%2\;src\t%0, %1, %3";
++    case LSHIFTRT:	return "ssa8l\t%2\;src\t%0, %3, %1";
++    default:		gcc_unreachable ();
++    }
++}
++  [(set_attr "type"	"arith")
++   (set_attr "mode"	"SI")
++   (set_attr "length"	"6")])
++
++(define_insn_and_split "*shlrd_per_byte_<code>_omit_AND"
++  [(set (match_operand:SI 0 "register_operand" "=a")
++	(ior_op:SI (match_operator:SI 5 "logical_shift_operator"
++			[(match_operand:SI 1 "register_operand" "r")
++			 (and:SI (ashift:SI (match_operand:SI 2 "register_operand" "r")
++					    (const_int 3))
++				 (match_operand:SI 4 "const_int_operand" "i"))])
++		   (match_operator:SI 6 "logical_shift_operator"
++			[(match_operand:SI 3 "register_operand" "r")
++			 (neg:SI (and:SI (ashift:SI (match_dup 2)
++						    (const_int 3))
++					 (match_dup 4)))])))]
++  "!optimize_debug && optimize
++   && xtensa_shlrd_which_direction (operands[5], operands[6]) != UNKNOWN
++   && (INTVAL (operands[4]) & 0x1f) == 3 << 3"
++  "#"
++  "&& 1"
++  [(set (match_dup 0)
++	(ior_op:SI (match_op_dup 5
++			[(match_dup 1)
++			 (ashift:SI (match_dup 2)
++				    (const_int 3))])
++		   (match_op_dup 6
++			[(match_dup 3)
++			 (neg:SI (ashift:SI (match_dup 2)
++					    (const_int 3)))])))]
+   ""
+-  "ssa8l\t%2\;srl\t%0, %1"
+   [(set_attr "type"	"arith")
+    (set_attr "mode"	"SI")
+    (set_attr "length"	"6")])
+@@ -1239,28 +1633,13 @@
+ (define_insn "*btrue"
+   [(set (pc)
+ 	(if_then_else (match_operator 3 "branch_operator"
+-		       [(match_operand:SI 0 "register_operand" "r,r")
+-			(match_operand:SI 1 "branch_operand" "K,r")])
++			[(match_operand:SI 0 "register_operand" "r,r")
++			 (match_operand:SI 1 "branch_operand" "K,r")])
+ 		      (label_ref (match_operand 2 "" ""))
+ 		      (pc)))]
+   ""
+ {
+-  return xtensa_emit_branch (false, which_alternative == 0, operands);
+-}
+-  [(set_attr "type"	"jump,jump")
+-   (set_attr "mode"	"none")
+-   (set_attr "length"	"3,3")])
+-
+-(define_insn "*bfalse"
+-  [(set (pc)
+-	(if_then_else (match_operator 3 "branch_operator"
+-		       [(match_operand:SI 0 "register_operand" "r,r")
+-			(match_operand:SI 1 "branch_operand" "K,r")])
+-		      (pc)
+-		      (label_ref (match_operand 2 "" ""))))]
+-  ""
+-{
+-  return xtensa_emit_branch (true, which_alternative == 0, operands);
++  return xtensa_emit_branch (which_alternative == 0, operands);
+ }
+   [(set_attr "type"	"jump,jump")
+    (set_attr "mode"	"none")
+@@ -1269,28 +1648,13 @@
+ (define_insn "*ubtrue"
+   [(set (pc)
+ 	(if_then_else (match_operator 3 "ubranch_operator"
+-		       [(match_operand:SI 0 "register_operand" "r,r")
+-			(match_operand:SI 1 "ubranch_operand" "L,r")])
++			[(match_operand:SI 0 "register_operand" "r,r")
++			 (match_operand:SI 1 "ubranch_operand" "L,r")])
+ 		      (label_ref (match_operand 2 "" ""))
+ 		      (pc)))]
+   ""
+ {
+-  return xtensa_emit_branch (false, which_alternative == 0, operands);
+-}
+-  [(set_attr "type"	"jump,jump")
+-   (set_attr "mode"	"none")
+-   (set_attr "length"	"3,3")])
+-
+-(define_insn "*ubfalse"
+-  [(set (pc)
+-	(if_then_else (match_operator 3 "ubranch_operator"
+-			 [(match_operand:SI 0 "register_operand" "r,r")
+-			  (match_operand:SI 1 "ubranch_operand" "L,r")])
+-		      (pc)
+-		      (label_ref (match_operand 2 "" ""))))]
+-  ""
+-{
+-  return xtensa_emit_branch (true, which_alternative == 0, operands);
++  return xtensa_emit_branch (which_alternative == 0, operands);
+ }
+   [(set_attr "type"	"jump,jump")
+    (set_attr "mode"	"none")
+@@ -1301,80 +1665,178 @@
+ (define_insn "*bittrue"
+   [(set (pc)
+ 	(if_then_else (match_operator 3 "boolean_operator"
+-			[(zero_extract:SI
+-			    (match_operand:SI 0 "register_operand" "r,r")
+-			    (const_int 1)
+-			    (match_operand:SI 1 "arith_operand" "J,r"))
++			[(zero_extract:SI (match_operand:SI 0 "register_operand" "r,r")
++					  (const_int 1)
++					  (match_operand:SI 1 "arith_operand" "J,r"))
+ 			 (const_int 0)])
+ 		      (label_ref (match_operand 2 "" ""))
+ 		      (pc)))]
+   ""
+ {
+-  return xtensa_emit_bit_branch (false, which_alternative == 0, operands);
++  static char result[64];
++  char op;
++  switch (GET_CODE (operands[3]))
++    {
++    case EQ:	op = 'c'; break;
++    case NE:	op = 's'; break;
++    default:	gcc_unreachable ();
++    }
++  if (which_alternative == 0)
++    {
++      operands[1] = GEN_INT (INTVAL (operands[1]) & 0x1f);
++      sprintf (result, "bb%ci\t%%0, %%d1, %%2", op);
++    }
++  else
++    sprintf (result, "bb%c\t%%0, %%1, %%2", op);
++  return result;
+ }
+   [(set_attr "type"	"jump")
+    (set_attr "mode"	"none")
+    (set_attr "length"	"3")])
+ 
+-(define_insn "*bitfalse"
++(define_insn "*masktrue"
+   [(set (pc)
+ 	(if_then_else (match_operator 3 "boolean_operator"
+-			[(zero_extract:SI
+-			    (match_operand:SI 0 "register_operand" "r,r")
+-			    (const_int 1)
+-			    (match_operand:SI 1 "arith_operand" "J,r"))
++			[(and:SI (match_operand:SI 0 "register_operand" "r")
++				 (match_operand:SI 1 "register_operand" "r"))
+ 			 (const_int 0)])
+-		      (pc)
+-		      (label_ref (match_operand 2 "" ""))))]
++		      (label_ref (match_operand 2 "" ""))
++		      (pc)))]
+   ""
+ {
+-  return xtensa_emit_bit_branch (true, which_alternative == 0, operands);
++  switch (GET_CODE (operands[3]))
++    {
++    case EQ:	return "bnone\t%0, %1, %2";
++    case NE:	return "bany\t%0, %1, %2";
++    default:	gcc_unreachable ();
++    }
+ }
+   [(set_attr "type"	"jump")
+    (set_attr "mode"	"none")
+    (set_attr "length"	"3")])
+ 
+-(define_insn "*masktrue"
++(define_insn "*masktrue_bitcmpl"
+   [(set (pc)
+ 	(if_then_else (match_operator 3 "boolean_operator"
+-		 [(and:SI (match_operand:SI 0 "register_operand" "r")
+-			  (match_operand:SI 1 "register_operand" "r"))
+-		  (const_int 0)])
++			[(and:SI (not:SI (match_operand:SI 0 "register_operand" "r"))
++				 (match_operand:SI 1 "register_operand" "r"))
++			 (const_int 0)])
+ 		      (label_ref (match_operand 2 "" ""))
+ 		      (pc)))]
+   ""
+ {
+   switch (GET_CODE (operands[3]))
+     {
+-    case EQ:		return "bnone\t%0, %1, %2";
+-    case NE:		return "bany\t%0, %1, %2";
+-    default:		gcc_unreachable ();
++    case EQ:	return "ball\t%0, %1, %2";
++    case NE:	return "bnall\t%0, %1, %2";
++    default:	gcc_unreachable ();
+     }
+ }
+   [(set_attr "type"	"jump")
+    (set_attr "mode"	"none")
+    (set_attr "length"	"3")])
+ 
+-(define_insn "*maskfalse"
++(define_insn_and_split "*masktrue_const_pow2_minus_one"
+   [(set (pc)
+ 	(if_then_else (match_operator 3 "boolean_operator"
+-		 [(and:SI (match_operand:SI 0 "register_operand" "r")
+-			  (match_operand:SI 1 "register_operand" "r"))
+-		  (const_int 0)])
+-		      (pc)
+-		      (label_ref (match_operand 2 "" ""))))]
+-  ""
++			[(and:SI (match_operand:SI 0 "register_operand" "r")
++				 (match_operand:SI 1 "const_int_operand" "i"))
++			 (const_int 0)])
++		      (label_ref (match_operand 2 "" ""))
++		      (pc)))]
++  "IN_RANGE (exact_log2 (INTVAL (operands[1]) + 1), 17, 31)"
++  "#"
++  "&& can_create_pseudo_p ()"
++  [(set (match_dup 4)
++	(ashift:SI (match_dup 0)
++		   (match_dup 1)))
++   (set (pc)
++	(if_then_else (match_op_dup 3
++			[(match_dup 4)
++			 (const_int 0)])
++		      (label_ref (match_dup 2))
++		      (pc)))]
+ {
+-  switch (GET_CODE (operands[3]))
+-    {
+-    case EQ:		return "bany\t%0, %1, %2";
+-    case NE:		return "bnone\t%0, %1, %2";
+-    default:		gcc_unreachable ();
+-    }
++  operands[1] = GEN_INT (32 - floor_log2 (INTVAL (operands[1]) + 1));
++  operands[4] = gen_reg_rtx (SImode);
+ }
+   [(set_attr "type"	"jump")
+    (set_attr "mode"	"none")
+-   (set_attr "length"	"3")])
++   (set (attr "length")
++	(if_then_else (match_test "TARGET_DENSITY
++				   && INTVAL (operands[1]) == 0x7FFFFFFF")
++		      (const_int 5)
++		      (const_int 6)))])
++
++(define_insn_and_split "*masktrue_const_negative_pow2"
++  [(set (pc)
++	(if_then_else (match_operator 3 "boolean_operator"
++			[(and:SI (match_operand:SI 0 "register_operand" "r")
++				 (match_operand:SI 1 "const_int_operand" "i"))
++			 (const_int 0)])
++		      (label_ref (match_operand 2 "" ""))
++		      (pc)))]
++  "IN_RANGE (exact_log2 (-INTVAL (operands[1])), 12, 30)"
++  "#"
++  "&& can_create_pseudo_p ()"
++  [(set (match_dup 4)
++	(lshiftrt:SI (match_dup 0)
++		     (match_dup 1)))
++   (set (pc)
++	(if_then_else (match_op_dup 3
++			[(match_dup 4)
++			 (const_int 0)])
++		      (label_ref (match_dup 2))
++		      (pc)))]
++{
++  operands[1] = GEN_INT (floor_log2 (-INTVAL (operands[1])));
++  operands[4] = gen_reg_rtx (SImode);
++}
++  [(set_attr "type"	"jump")
++   (set_attr "mode"	"none")
++   (set_attr "length"	"6")])
++
++(define_insn_and_split "*masktrue_const_shifted_mask"
++  [(set (pc)
++	(if_then_else (match_operator 4 "boolean_operator"
++			[(and:SI (match_operand:SI 0 "register_operand" "r")
++				 (match_operand:SI 1 "shifted_mask_operand" "i"))
++			 (match_operand:SI 2 "const_int_operand" "i")])
++		      (label_ref (match_operand 3 "" ""))
++		      (pc)))]
++  "(INTVAL (operands[2]) & ((1 << ctz_hwi (INTVAL (operands[1]))) - 1)) == 0
++   && xtensa_b4const_or_zero ((uint32_t)INTVAL (operands[2]) >> ctz_hwi (INTVAL (operands[1])))"
++  "#"
++  "&& can_create_pseudo_p ()"
++  [(set (match_dup 6)
++	(zero_extract:SI (match_dup 0)
++			 (match_dup 5)
++			 (match_dup 1)))
++   (set (pc)
++	(if_then_else (match_op_dup 4
++			[(match_dup 6)
++			 (match_dup 2)])
++		      (label_ref (match_dup 3))
++		      (pc)))]
++{
++  HOST_WIDE_INT mask = INTVAL (operands[1]);
++  int shift = ctz_hwi (mask);
++  int mask_size = floor_log2 (((uint32_t)mask >> shift) + 1);
++  int mask_pos = shift;
++  if (BITS_BIG_ENDIAN)
++    mask_pos = (32 - (mask_size + shift)) & 0x1f;
++  operands[1] = GEN_INT (mask_pos);
++  operands[2] = GEN_INT ((uint32_t)INTVAL (operands[2]) >> shift);
++  operands[5] = GEN_INT (mask_size);
++  operands[6] = gen_reg_rtx (SImode);
++}
++  [(set_attr "type"	"jump")
++   (set_attr "mode"	"none")
++   (set (attr "length")
++	(if_then_else (match_test "TARGET_DENSITY
++				   && (uint32_t)INTVAL (operands[2]) >> ctz_hwi (INTVAL (operands[1])) == 0")
++		      (const_int 5)
++		      (const_int 6)))])
+ 
+ 
+ ;; Zero-overhead looping support.
+@@ -1696,18 +2158,13 @@
+ 	 (match_operand 1 "" ""))]
+   ""
+ {
+-  rtx addr = XEXP (operands[0], 0);
+-  if (flag_pic && GET_CODE (addr) == SYMBOL_REF
+-      && (!SYMBOL_REF_LOCAL_P (addr) || SYMBOL_REF_EXTERNAL_P (addr)))
+-    addr = gen_sym_PLT (addr);
+-  if (!call_insn_operand (addr, VOIDmode))
+-    XEXP (operands[0], 0) = copy_to_mode_reg (Pmode, addr);
++  xtensa_prepare_expand_call (0, operands);
+ })
+ 
+ (define_insn "call_internal"
+   [(call (mem (match_operand:SI 0 "call_insn_operand" "nir"))
+ 	 (match_operand 1 "" "i"))]
+-  ""
++  "!SIBLING_CALL_P (insn)"
+ {
+   return xtensa_emit_call (0, operands);
+ }
+@@ -1721,19 +2178,14 @@
+ 	      (match_operand 2 "" "")))]
+   ""
+ {
+-  rtx addr = XEXP (operands[1], 0);
+-  if (flag_pic && GET_CODE (addr) == SYMBOL_REF
+-      && (!SYMBOL_REF_LOCAL_P (addr) || SYMBOL_REF_EXTERNAL_P (addr)))
+-    addr = gen_sym_PLT (addr);
+-  if (!call_insn_operand (addr, VOIDmode))
+-    XEXP (operands[1], 0) = copy_to_mode_reg (Pmode, addr);
++  xtensa_prepare_expand_call (1, operands);
+ })
+ 
+ (define_insn "call_value_internal"
+   [(set (match_operand 0 "register_operand" "=a")
+         (call (mem (match_operand:SI 1 "call_insn_operand" "nir"))
+               (match_operand 2 "" "i")))]
+-  ""
++  "!SIBLING_CALL_P (insn)"
+ {
+   return xtensa_emit_call (1, operands);
+ }
+@@ -1741,6 +2193,70 @@
+    (set_attr "mode"	"none")
+    (set_attr "length"	"3")])
+ 
++(define_expand "sibcall"
++  [(call (match_operand 0 "memory_operand" "")
++	 (match_operand 1 "" ""))]
++  "!TARGET_WINDOWED_ABI"
++{
++  xtensa_prepare_expand_call (0, operands);
++})
++
++(define_insn "sibcall_internal"
++  [(call (mem:SI (match_operand:SI 0 "call_insn_operand" "nir"))
++	 (match_operand 1 "" "i"))]
++  "!TARGET_WINDOWED_ABI && SIBLING_CALL_P (insn)"
++{
++  return xtensa_emit_sibcall (0, operands);
++}
++  [(set_attr "type"	"call")
++   (set_attr "mode"	"none")
++   (set_attr "length"	"3")])
++
++(define_split
++  [(call (mem:SI (match_operand:SI 0 "register_operand"))
++	 (match_operand 1 ""))]
++  "reload_completed
++   && !TARGET_WINDOWED_ABI && SIBLING_CALL_P (insn)
++   && IN_RANGE (REGNO (operands[0]), 12, 15)"
++  [(set (reg:SI A10_REG)
++	(match_dup 0))
++   (call (mem:SI (reg:SI A10_REG))
++	 (match_dup 1))])
++
++(define_expand "sibcall_value"
++  [(set (match_operand 0 "register_operand" "")
++	(call (match_operand 1 "memory_operand" "")
++	      (match_operand 2 "" "")))]
++  "!TARGET_WINDOWED_ABI"
++{
++  xtensa_prepare_expand_call (1, operands);
++})
++
++(define_insn "sibcall_value_internal"
++  [(set (match_operand 0 "register_operand" "=a")
++	(call (mem:SI (match_operand:SI 1 "call_insn_operand" "nir"))
++	      (match_operand 2 "" "i")))]
++  "!TARGET_WINDOWED_ABI && SIBLING_CALL_P (insn)"
++{
++  return xtensa_emit_sibcall (1, operands);
++}
++  [(set_attr "type"	"call")
++   (set_attr "mode"	"none")
++   (set_attr "length"	"3")])
++
++(define_split
++  [(set (match_operand 0 "register_operand")
++	(call (mem:SI (match_operand:SI 1 "register_operand"))
++	      (match_operand 2 "")))]
++  "reload_completed
++   && !TARGET_WINDOWED_ABI && SIBLING_CALL_P (insn)
++   && IN_RANGE (REGNO (operands[1]), 12, 15)"
++  [(set (reg:SI A10_REG)
++	(match_dup 1))
++   (set (match_dup 0)
++	(call (mem:SI (reg:SI A10_REG))
++	      (match_dup 2)))])
++
+ (define_insn "entry"
+   [(set (reg:SI A1_REG)
+ 	(unspec_volatile:SI [(match_operand:SI 0 "const_int_operand" "i")]
+@@ -1762,7 +2278,10 @@
+ }
+   [(set_attr "type"	"jump")
+    (set_attr "mode"	"none")
+-   (set_attr "length"	"2")])
++   (set (attr "length")
++	(if_then_else (match_test "TARGET_DENSITY")
++		      (const_int 2)
++		      (const_int 3)))])
+ 
+ 
+ ;; Miscellaneous instructions.
+@@ -1805,7 +2324,15 @@
+   [(return)]
+   ""
+ {
+-  xtensa_expand_epilogue ();
++  xtensa_expand_epilogue (false);
++  DONE;
++})
++
++(define_expand "sibcall_epilogue"
++  [(return)]
++  "!TARGET_WINDOWED_ABI"
++{
++  xtensa_expand_epilogue (true);
+   DONE;
+ })
+ 
+@@ -1817,7 +2344,10 @@
+ }
+   [(set_attr "type"	"nop")
+    (set_attr "mode"	"none")
+-   (set_attr "length"	"3")])
++   (set (attr "length")
++	(if_then_else (match_test "TARGET_DENSITY")
++		      (const_int 2)
++		      (const_int 3)))])
+ 
+ (define_expand "nonlocal_goto"
+   [(match_operand:SI 0 "general_operand" "")
+@@ -1881,8 +2411,9 @@
+   [(unspec_volatile [(const_int 0)] UNSPECV_BLOCKAGE)]
+   ""
+   ""
+-  [(set_attr "length" "0")
+-   (set_attr "type" "nop")])
++  [(set_attr "type"	"nop")
++   (set_attr "mode"	"none")
++   (set_attr "length"	"0")])
+ 
+ ;; Do not schedule instructions accessing memory before this point.
+ 
+@@ -1901,7 +2432,9 @@
+         (unspec:BLK [(match_operand:SI 1 "" "")] UNSPEC_FRAME_BLOCKAGE))]
+   ""
+   ""
+-  [(set_attr "length" "0")])
++  [(set_attr "type"	"nop")
++   (set_attr "mode"	"none")
++   (set_attr "length"	"0")])
+ 
+ (define_insn "trap"
+   [(trap_if (const_int 1) (const_int 0))]
+@@ -1914,7 +2447,10 @@
+ }
+   [(set_attr "type"	"trap")
+    (set_attr "mode"	"none")
+-   (set_attr "length"	"3")])
++   (set (attr "length")
++	(if_then_else (match_test "!TARGET_DEBUG && TARGET_DENSITY")
++		      (const_int 2)
++		      (const_int 3)))])
+ 
+ ;; Setting up a frame pointer is tricky for Xtensa because GCC doesn't
+ ;; know if a frame pointer is required until the reload pass, and
+@@ -2177,3 +2713,103 @@
+   xtensa_expand_atomic (<CODE>, operands[0], operands[1], operands[2], true);
+   DONE;
+ })
++
++(define_insn_and_split "*round_up_to_even"
++  [(set (match_operand:SI 0 "register_operand" "=a")
++	(and:SI (plus:SI (match_operand:SI 1 "register_operand" "r")
++			 (const_int 1))
++		(const_int -2)))]
++  ""
++  "#"
++  "can_create_pseudo_p ()"
++  [(set (match_dup 2)
++	(and:SI (match_dup 1)
++		(const_int 1)))
++   (set (match_dup 0)
++	(plus:SI (match_dup 2)
++		 (match_dup 1)))]
++{
++  operands[2] = gen_reg_rtx (SImode);
++}
++  [(set_attr "type"	"arith")
++   (set_attr "mode"	"SI")
++   (set (attr "length")
++	(if_then_else (match_test "TARGET_DENSITY")
++		      (const_int 5)
++		      (const_int 6)))])
++
++(define_insn_and_split "*signed_ge_zero"
++  [(set (match_operand:SI 0 "register_operand" "=a")
++	(ge:SI (match_operand:SI 1 "register_operand" "r")
++	       (const_int 0)))]
++  ""
++  "#"
++  ""
++  [(set (match_dup 0)
++	(ashiftrt:SI (match_dup 1)
++		     (const_int 31)))
++   (set (match_dup 0)
++	(plus:SI (match_dup 0)
++		 (const_int 1)))]
++  ""
++  [(set_attr "type"	"arith")
++   (set_attr "mode"	"SI")
++   (set (attr "length")
++	(if_then_else (match_test "TARGET_DENSITY")
++		      (const_int 5)
++		      (const_int 6)))])
++
++(define_peephole2
++  [(set (match_operand:SI 0 "register_operand")
++	(match_operand:SI 6 "reload_operand"))
++   (set (match_operand:SI 1 "register_operand")
++	(match_operand:SI 7 "reload_operand"))
++   (set (match_operand:SF 2 "register_operand")
++	(match_operand:SF 4 "register_operand"))
++   (set (match_operand:SF 3 "register_operand")
++	(match_operand:SF 5 "register_operand"))]
++  "REGNO (operands[0]) == REGNO (operands[4])
++   && REGNO (operands[1]) == REGNO (operands[5])
++   && peep2_reg_dead_p (4, operands[0])
++   && peep2_reg_dead_p (4, operands[1])"
++  [(set (match_dup 2)
++	(match_dup 6))
++   (set (match_dup 3)
++	(match_dup 7))]
++{
++  uint32_t check = 0;
++  int i;
++  for (i = 0; i <= 3; ++i)
++    {
++      uint32_t mask = (uint32_t)1 << REGNO (operands[i]);
++      if (check & mask)
++	FAIL;
++      check |= mask;
++    }
++  operands[6] = gen_rtx_MEM (SFmode, XEXP (operands[6], 0));
++  operands[7] = gen_rtx_MEM (SFmode, XEXP (operands[7], 0));
++})
++
++(define_split
++  [(clobber (match_operand:DSC 0 "register_operand"))]
++  "GP_REG_P (REGNO (operands[0]))"
++  [(const_int 0)]
++{
++  unsigned int regno = REGNO (operands[0]);
++  machine_mode inner_mode = GET_MODE_INNER (<MODE>mode);
++  rtx_insn *insn;
++  rtx x;
++  if (! ((insn = next_nonnote_nondebug_insn (curr_insn))
++	 && NONJUMP_INSN_P (insn)
++	 && GET_CODE (x = PATTERN (insn)) == SET
++	 && REG_P (x = XEXP (x, 0))
++	 && GET_MODE (x) == inner_mode
++	 && REGNO (x) == regno
++	 && (insn = next_nonnote_nondebug_insn (insn))
++	 && NONJUMP_INSN_P (insn)
++	 && GET_CODE (x = PATTERN (insn)) == SET
++	 && REG_P (x = XEXP (x, 0))
++	 && GET_MODE (x) == inner_mode
++	 && REGNO (x) == regno + REG_NREGS (operands[0]) / 2))
++    FAIL;
++})
+diff --git a/gcc/config/xtensa/xtensa.opt b/gcc/config/xtensa/xtensa.opt
+index aef67970b..97aa44f92 100644
+--- a/gcc/config/xtensa/xtensa.opt
++++ b/gcc/config/xtensa/xtensa.opt
+@@ -27,9 +27,13 @@ Target Report Mask(FORCE_NO_PIC)
+ Disable position-independent code (PIC) for use in OS kernel code.
+ 
+ mlongcalls
+-Target
++Target Mask(LONGCALLS)
+ Use indirect CALLXn instructions for large programs.
+ 
++mextra-l32r-costs=
++Target RejectNegative Joined UInteger Var(xtensa_extra_l32r_costs) Init(0)
++Set extra memory access cost for L32R instruction, in clock-cycle units.
++
+ mtarget-align
+ Target
+ Automatically align branch targets to reduce branch penalties.
+diff --git a/gcc/doc/invoke.texi b/gcc/doc/invoke.texi
+index eabeec944..c35f51afb 100644
+--- a/gcc/doc/invoke.texi
++++ b/gcc/doc/invoke.texi
+@@ -1385,7 +1385,8 @@ See RS/6000 and PowerPC Options.
+ -mtext-section-literals  -mno-text-section-literals @gol
+ -mauto-litpools  -mno-auto-litpools @gol
+ -mtarget-align  -mno-target-align @gol
+--mlongcalls  -mno-longcalls}
++-mlongcalls  -mno-longcalls @gol
++-mextra-l32r-costs=@var{cycles}}
+ 
+ @emph{zSeries Options}
+ See S/390 and zSeries Options.
+@@ -30519,6 +30520,14 @@ assembly code generated by GCC still shows direct call
+ instructions---look at the disassembled object code to see the actual
+ instructions.  Note that the assembler uses an indirect call for
+ every cross-file call, not just those that really are out of range.
++
++@item -mextra-l32r-costs=@var{n}
++@opindex mextra-l32r-costs
++Specify an extra cost of instruction RAM/ROM access for @code{L32R}
++instructions, in clock cycles.  This affects, when optimizing for speed,
++whether loading a constant from literal pool using @code{L32R} or
++synthesizing the constant from a small one with a couple of arithmetic
++instructions.  The default value is 0.
+ @end table
+ 
+ @node zSeries Options
+diff --git a/gcc/testsuite/gcc.target/xtensa/BALL-BNALL.c b/gcc/testsuite/gcc.target/xtensa/BALL-BNALL.c
+new file mode 100644
+index 000000000..ba61c6f37
+--- /dev/null
++++ b/gcc/testsuite/gcc.target/xtensa/BALL-BNALL.c
+@@ -0,0 +1,33 @@
++/* { dg-do compile } */
++/* { dg-options "-O" } */
++
++extern void foo(void);
++
++void BNONE_test(int a, int b)
++{
++  if (a & b)
++    foo();
++}
++
++void BANY_test(int a, int b)
++{
++  if (!(a & b))
++    foo();
++}
++
++void BALL_test(int a, int b)
++{
++  if (~a & b)
++    foo();
++}
++
++void BNALL_test(int a, int b)
++{
++  if (!(~a & b))
++    foo();
++}
++
++/* { dg-final { scan-assembler-times "bnone" 1 } } */
++/* { dg-final { scan-assembler-times "bany" 1 } } */
++/* { dg-final { scan-assembler-times "ball" 1 } } */
++/* { dg-final { scan-assembler-times "bnall" 1 } } */
+diff --git a/gcc/testsuite/gcc.target/xtensa/bswap-O1.c b/gcc/testsuite/gcc.target/xtensa/bswap-O1.c
+new file mode 100644
+index 000000000..a0c885baa
+--- /dev/null
++++ b/gcc/testsuite/gcc.target/xtensa/bswap-O1.c
+@@ -0,0 +1,37 @@
++/* { dg-do compile } */
++/* { dg-options "-O1" } */
++
++unsigned int test_0(unsigned int a)
++{
++  return (a & 0x000000FF) << 24 |
++         (a & 0x0000FF00) << 8  |
++         (a & 0x00FF0000) >> 8  |
++         (a & 0xFF000000) >> 24;
++}
++
++unsigned int test_1(unsigned int a)
++{
++  union
++  {
++    unsigned int i;
++    unsigned char a[4];
++  } u, v;
++  u.i = a;
++  v.a[0] = u.a[3];
++  v.a[1] = u.a[2];
++  v.a[2] = u.a[1];
++  v.a[3] = u.a[0];
++  return v.i;
++}
++
++unsigned int test_2(unsigned int a)
++{
++  return __builtin_bswap32(a);
++}
++
++unsigned long long test_3(unsigned long long a)
++{
++  return __builtin_bswap64(a);
++}
++
++/* { dg-final { scan-assembler-times "call" 2 } } */
+diff --git a/gcc/testsuite/gcc.target/xtensa/bswap-O2.c b/gcc/testsuite/gcc.target/xtensa/bswap-O2.c
+new file mode 100644
+index 000000000..4cf95b925
+--- /dev/null
++++ b/gcc/testsuite/gcc.target/xtensa/bswap-O2.c
+@@ -0,0 +1,37 @@
++/* { dg-do compile } */
++/* { dg-options "-O2" } */
++
++unsigned int test_0(unsigned int a)
++{
++  return (a & 0x000000FF) << 24 |
++         (a & 0x0000FF00) << 8  |
++         (a & 0x00FF0000) >> 8  |
++         (a & 0xFF000000) >> 24;
++}
++
++unsigned int test_1(unsigned int a)
++{
++  union
++  {
++    unsigned int i;
++    unsigned char a[4];
++  } u, v;
++  u.i = a;
++  v.a[0] = u.a[3];
++  v.a[1] = u.a[2];
++  v.a[2] = u.a[1];
++  v.a[3] = u.a[0];
++  return v.i;
++}
++
++unsigned int test_2(unsigned int a)
++{
++  return __builtin_bswap32(a);
++}
++
++unsigned long long test_3(unsigned long long a)
++{
++  return __builtin_bswap64(a);
++}
++
++/* { dg-final { scan-assembler-times "ssai" 4 } } */
+diff --git a/gcc/testsuite/gcc.target/xtensa/bswap-Os.c b/gcc/testsuite/gcc.target/xtensa/bswap-Os.c
+new file mode 100644
+index 000000000..1e010fd62
+--- /dev/null
++++ b/gcc/testsuite/gcc.target/xtensa/bswap-Os.c
+@@ -0,0 +1,37 @@
++/* { dg-do compile } */
++/* { dg-options "-Os" } */
++
++unsigned int test_0(unsigned int a)
++{
++  return (a & 0x000000FF) << 24 |
++         (a & 0x0000FF00) << 8  |
++         (a & 0x00FF0000) >> 8  |
++         (a & 0xFF000000) >> 24;
++}
++
++unsigned int test_1(unsigned int a)
++{
++  union
++  {
++    unsigned int i;
++    unsigned char a[4];
++  } u, v;
++  u.i = a;
++  v.a[0] = u.a[3];
++  v.a[1] = u.a[2];
++  v.a[2] = u.a[1];
++  v.a[3] = u.a[0];
++  return v.i;
++}
++
++unsigned int test_2(unsigned int a)
++{
++  return __builtin_bswap32(a);
++}
++
++unsigned long long test_3(unsigned long long a)
++{
++  return __builtin_bswap64(a);
++}
++
++/* { dg-final { scan-assembler-times "call" 4 } } */
+diff --git a/gcc/testsuite/gcc.target/xtensa/check_zero_byte.c b/gcc/testsuite/gcc.target/xtensa/check_zero_byte.c
+new file mode 100644
+index 000000000..6a04aaeef
+--- /dev/null
++++ b/gcc/testsuite/gcc.target/xtensa/check_zero_byte.c
+@@ -0,0 +1,9 @@
++/* { dg-do compile } */
++/* { dg-options "-O" } */
++
++int check_zero_byte(int v)
++{
++  return (v - 0x01010101) & ~v & 0x80808080;
++}
++
++/* { dg-final { scan-assembler-not "movi" } } */
+diff --git a/gcc/testsuite/gcc.target/xtensa/constsynth_2insns.c b/gcc/testsuite/gcc.target/xtensa/constsynth_2insns.c
+new file mode 100644
+index 000000000..ec2606ed1
+--- /dev/null
++++ b/gcc/testsuite/gcc.target/xtensa/constsynth_2insns.c
+@@ -0,0 +1,44 @@
++/* { dg-do compile } */
++/* { dg-options "-Os } */
++
++int test_0(void)
++{
++  return 4095;
++}
++
++int test_1(void)
++{
++  return 2147483647;
++}
++
++int test_2(void)
++{
++  return -34816;
++}
++
++int test_3(void)
++{
++  return -2049;
++}
++
++int test_4(void)
++{
++  return 2048;
++}
++
++int test_5(void)
++{
++  return 34559;
++}
++
++int test_6(void)
++{
++  return 43680;
++}
++
++void test_7(int *p)
++{
++  *p = -1432354816;
++}
++
++/* { dg-final { scan-assembler-not "l32r" } } */
+diff --git a/gcc/testsuite/gcc.target/xtensa/constsynth_3insns.c b/gcc/testsuite/gcc.target/xtensa/constsynth_3insns.c
+new file mode 100644
+index 000000000..f3c4a1c7c
+--- /dev/null
++++ b/gcc/testsuite/gcc.target/xtensa/constsynth_3insns.c
+@@ -0,0 +1,24 @@
++/* { dg-do compile } */
++/* { dg-options "-O2 -mextra-l32r-costs=3" } */
++
++int test_0(void)
++{
++  return 134217216;
++}
++
++int test_1(void)
++{
++  return -27604992;
++}
++
++int test_2(void)
++{
++  return -162279;
++}
++
++void test_3(int *p)
++{
++  *p = 192437;
++}
++
++/* { dg-final { scan-assembler-not "l32r" } } */
+diff --git a/gcc/testsuite/gcc.target/xtensa/constsynth_double.c b/gcc/testsuite/gcc.target/xtensa/constsynth_double.c
+new file mode 100644
+index 000000000..11e5d5242
+--- /dev/null
++++ b/gcc/testsuite/gcc.target/xtensa/constsynth_double.c
+@@ -0,0 +1,11 @@
++/* { dg-do compile } */
++/* { dg-options "-Os } */
++
++void test(unsigned int count, double array[])
++{
++  unsigned int i;
++  for (i = 0; i < count; ++i)
++    array[i] = 1.0;
++}
++
++/* { dg-final { scan-assembler-not "l32r" } } */
+diff --git a/gcc/testsuite/gcc.target/xtensa/funnel_shifter.c b/gcc/testsuite/gcc.target/xtensa/funnel_shifter.c
+new file mode 100644
+index 000000000..c8f987ccd
+--- /dev/null
++++ b/gcc/testsuite/gcc.target/xtensa/funnel_shifter.c
+@@ -0,0 +1,17 @@
++/* { dg-do compile } */
++/* { dg-options "-O2" } */
++
++unsigned int test_0(const void *addr)
++{
++  unsigned int n = (unsigned int)addr;
++  const unsigned int *a = (const unsigned int*)(n & ~3);
++  n = (n & 3) * 8;
++  return (a[0] >> n) | (a[1] << (32 - n));
++}
++
++unsigned int test_1(unsigned int a, unsigned int b)
++{
++  return (a >> 16) + (b << 16);
++}
++
++/* { dg-final { scan-assembler-times "src" 2 } } */
+diff --git a/gcc/testsuite/gcc.target/xtensa/one_cmpl_abs.c b/gcc/testsuite/gcc.target/xtensa/one_cmpl_abs.c
+new file mode 100644
+index 000000000..608f65fd7
+--- /dev/null
++++ b/gcc/testsuite/gcc.target/xtensa/one_cmpl_abs.c
+@@ -0,0 +1,9 @@
++/* { dg-do compile } */
++/* { dg-options "-O1" } */
++
++int one_cmpl_abs(int a)
++{
++  return a < 0 ? ~a : a;
++}
++
++/* { dg-final { scan-assembler-not "bgez" } } */
+diff --git a/gcc/testsuite/gcc.target/xtensa/sibcalls.c b/gcc/testsuite/gcc.target/xtensa/sibcalls.c
+new file mode 100644
+index 000000000..7a4018796
+--- /dev/null
++++ b/gcc/testsuite/gcc.target/xtensa/sibcalls.c
+@@ -0,0 +1,20 @@
++/* { dg-do compile } */
++/* { dg-options "-O2 -foptimize-sibling-calls" } */
++
++extern int foo(int);
++extern void bar(int);
++
++int test_0(int a) {
++    return foo(a);
++}
++
++void test_1(int a) {
++    bar(a);
++}
++
++int test_2(int (*a)(void)) {
++    bar(0);
++    return a();
++}
++
++/* { dg-final { scan-assembler-not "ret" } } */
+diff --git a/libgcc/config/xtensa/lib1funcs.S b/libgcc/config/xtensa/lib1funcs.S
+index b19deae14..ad9072c40 100644
+--- a/libgcc/config/xtensa/lib1funcs.S
++++ b/libgcc/config/xtensa/lib1funcs.S
+@@ -456,6 +456,29 @@ __nsau_data:
+ #endif /* L_clz */
+ 
+ 
++#ifdef L_clrsbsi2
++	.align	4
++	.global	__clrsbsi2
++	.type	__clrsbsi2, @function
++__clrsbsi2:
++	leaf_entry sp, 16
++#if XCHAL_HAVE_NSA
++	nsa	a2, a2
++#else
++	srai	a3, a2, 31
++	xor	a3, a3, a2
++	movi	a2, 31
++	beqz	a3, .Lreturn
++	do_nsau	a2, a3, a4, a5
++	addi	a2, a2, -1
++.Lreturn:
++#endif
++	leaf_return
++	.size	__clrsbsi2, . - __clrsbsi2
++
++#endif /* L_clrsbsi2 */
++
++
+ #ifdef L_clzsi2
+ 	.align	4
+ 	.global	__clzsi2
+diff --git a/libgcc/config/xtensa/t-xtensa b/libgcc/config/xtensa/t-xtensa
+index 9836c96ae..084618b38 100644
+--- a/libgcc/config/xtensa/t-xtensa
++++ b/libgcc/config/xtensa/t-xtensa
+@@ -1,6 +1,6 @@
+ LIB1ASMSRC = xtensa/lib1funcs.S
+ LIB1ASMFUNCS = _mulsi3 _divsi3 _modsi3 _udivsi3 _umodsi3 \
+-	_umulsidi3 _clz _clzsi2 _ctzsi2 _ffssi2 \
++	_umulsidi3 _clz _clrsbsi2 _clzsi2 _ctzsi2 _ffssi2 \
+ 	_ashldi3 _ashrdi3 _lshrdi3 \
+ 	_bswapsi2 _bswapdi2 \
+ 	_negsf2 _addsubsf3 _mulsf3 _divsf3 _cmpsf2 _fixsfsi _fixsfdi \
+-- 
+2.20.1
+
