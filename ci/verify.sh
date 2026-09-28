@@ -57,9 +57,10 @@ cd "$WORK"
   -Wl,--start-group -lstdc++ -lm -lc -lgcc -Wl,--end-group -o verify.elf
 "$T-objcopy" -O binary verify.elf verify.bin
 "$T-objcopy" --strip-debug verify.elf verify.stripped.elf
-"$T-objdump" -d verify.stripped.elf | tail -n +3 >verify.disasm
-"$T-size" -A verify.stripped.elf | tail -n +2 >verify.size
-"$T-readelf" -S -W verify.stripped.elf >verify.sections
+# Windows programs end text lines with CR LF
+"$T-objdump" -d verify.stripped.elf | tr -d '\r' | tail -n +3 >verify.disasm
+"$T-size" -A verify.stripped.elf | tr -d '\r' | tail -n +2 >verify.size
+"$T-readelf" -S -W verify.stripped.elf | tr -d '\r' >verify.sections
 
 for f in "${objects[@]}" libverify.a verify.bin verify.stripped.elf verify.disasm verify.size verify.sections; do
   echo "$(sha256 "$f")  $f"
