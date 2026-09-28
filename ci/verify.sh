@@ -40,11 +40,27 @@ for src in *.c; do
   objects+=("$src.o")
 done
 for src in *.cpp; do
+  [ "$src" = pch_user.cpp ] && continue
   "$T-g++" "${COMMON[@]}" "${CXXFLAGS[@]}" -c "$src" -o "$WORK/$src.o"
   objects+=("$src.o")
 done
 "$T-gcc" "${COMMON[@]}" -c startup.S -o "$WORK/startup.S.o"
 objects+=(startup.S.o)
+
+# A precompiled header must load, and give the same object as the plain
+# header. GCC looks for it next to the header, so both live in the work dir.
+cp pch.h "$WORK/pch.h"
+"$T-g++" "${COMMON[@]}" "${CXXFLAGS[@]}" -x c++-header "$WORK/pch.h" -o "$WORK/pch.h.gch"
+"$T-g++" "${COMMON[@]}" "${CXXFLAGS[@]}" -Winvalid-pch -Werror=invalid-pch -H \
+  -include "$WORK/pch.h" -c pch_user.cpp -o "$WORK/pch_user.cpp.o" 2>"$WORK/pch.log"
+if ! grep -q '^! ' "$WORK/pch.log"; then
+  echo "The precompiled header was not loaded:"
+  cat "$WORK/pch.log"
+  exit 1
+fi
+"$T-g++" "${COMMON[@]}" "${CXXFLAGS[@]}" -c pch_user.cpp -o "$WORK/pch_user.plain.o"
+cmp "$WORK/pch_user.cpp.o" "$WORK/pch_user.plain.o"
+objects+=(pch_user.cpp.o)
 
 cd "$WORK"
 "$T-ar" rcsD libverify.a "${objects[@]}"
