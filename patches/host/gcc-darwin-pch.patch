@@ -1,20 +1,21 @@
-Load precompiled headers on arm64 macOS.
+Load precompiled headers on macOS.
 
 GCC only loads a precompiled header at the address it was saved from.
-arm64 macOS loads every program at a random address and, unlike x86_64,
-has no link option to turn that off. The compiler proper (cc1, cc1plus,
-lto1) therefore restarts itself once with address randomisation disabled
-for its own process, which macOS allows through posix_spawn.
+macOS loads every program at a random address; arm64 has no link option
+to turn that off, and current linkers no longer honour it reliably for
+x86_64 either. The compiler proper (cc1, cc1plus, lto1) therefore
+restarts itself once with address randomisation disabled for its own
+process, which macOS allows through posix_spawn.
 
 diff --git a/gcc/main.c b/gcc/main.c
-index b1ffe1b1d..e4a6278b7 100644
+index b1ffe1b1d..29ff106ee 100644
 --- a/gcc/main.c
 +++ b/gcc/main.c
 @@ -17,6 +17,19 @@ You should have received a copy of the GNU General Public License
  along with GCC; see the file COPYING3.  If not see
  <http://www.gnu.org/licenses/>.  */
  
-+#if defined (__APPLE__) && defined (__aarch64__)
++#if defined (__APPLE__)
 +/* Before the GCC headers, which redefine names these use.  */
 +#include <crt_externs.h>
 +#include <limits.h>
@@ -34,13 +35,13 @@ index b1ffe1b1d..e4a6278b7 100644
  
  int main (int argc, char **argv);
  
-+#if defined (__APPLE__) && defined (__aarch64__)
++#if defined (__APPLE__)
 +#ifndef _POSIX_SPAWN_DISABLE_ASLR
 +#define _POSIX_SPAWN_DISABLE_ASLR 0x0100
 +#endif
 +
 +/* A precompiled header can only be loaded at the address it was saved from.
-+   arm64 macOS loads every program at a random address and offers no way to
++   macOS loads every program at a random address, and arm64 offers no way to
 +   link without that, so start again with the randomisation switched off.  */
 +
 +static void
@@ -77,7 +78,7 @@ index b1ffe1b1d..e4a6278b7 100644
  int
  main (int argc, char **argv)
  {
-+#if defined (__APPLE__) && defined (__aarch64__)
++#if defined (__APPLE__)
 +  darwin_restart_without_aslr (argv);
 +#endif
    toplev toplev (NULL, /* external_timer */
