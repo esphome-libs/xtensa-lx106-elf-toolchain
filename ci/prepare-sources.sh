@@ -99,7 +99,9 @@ for ow in "$SRC/gcc/include/xtensa-config.h" "$SRC/binutils/include/xtensa-confi
 done
 (cd "$SRC/lx106-hal" && autoreconf -i)
 
-# Not built, and a large part of the download for every host
-rm -rf "$SRC/gcc/gcc/testsuite" "$SRC/binutils/gdb" "$SRC/binutils/sim" "$SRC/binutils/readline"
+# Not built, and a large part of the download for every host. The compiler's
+# self test reads gcc/testsuite/selftests, so that one stays.
+find "$SRC/gcc/gcc/testsuite" -mindepth 1 -maxdepth 1 ! -name selftests -exec rm -rf {} +
+rm -rf "$SRC/binutils/gdb" "$SRC/binutils/sim" "$SRC/binutils/readline"
 
 echo "Sources ready in $SRC"
