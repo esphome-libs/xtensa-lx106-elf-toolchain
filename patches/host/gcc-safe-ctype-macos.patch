@@ -1,0 +1,27 @@
+Do not poison the ctype names on macOS hosts.
+
+safe-ctype.h redefines isalpha, islower and the other ctype names so that
+GCC's own code cannot use them by accident. The C++ library headers of
+current macOS use those names internally, so every file that includes a C++
+header after system.h fails to compile. GCC fixed this later by reordering
+its includes. Leaving out the guard on macOS hosts does not change what the
+compiler does.
+
+--- a/include/safe-ctype.h	2026-09-28 19:00:54
++++ b/include/safe-ctype.h	2026-09-28 19:00:54
+@@ -120,6 +120,8 @@
+    So we include ctype.h here and then immediately redefine its macros.  */
+ 
+ #include <ctype.h>
++/* The C++ library headers of current macOS use these names themselves.  */
++#ifndef __APPLE__
+ #undef isalpha
+ #define isalpha(c) do_not_use_isalpha_with_safe_ctype
+ #undef isalnum
+@@ -146,5 +148,6 @@
+ #define toupper(c) do_not_use_toupper_with_safe_ctype
+ #undef tolower
+ #define tolower(c) do_not_use_tolower_with_safe_ctype
++#endif /* __APPLE__ */
+ 
+ #endif /* SAFE_CTYPE_H */
