@@ -10,5 +10,10 @@ change the code the compiler generates.
   the ctype names that GCC poisons for its own code. This leaves out the
   poisoning on macOS hosts.
 
+- `gcc-darwin-arm64-pch.patch`: arm64 macOS loads every program at a random
+  address, and GCC 10 only loads a precompiled header at the address it was
+  saved from. The compiler proper restarts itself once with address
+  randomisation off for its own process.
+
 These patches modify GCC and are covered by GCC's license, the GNU General
 Public License version 3 or later.

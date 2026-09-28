@@ -1,0 +1,85 @@
+Load precompiled headers on arm64 macOS.
+
+GCC only loads a precompiled header at the address it was saved from.
+arm64 macOS loads every program at a random address and, unlike x86_64,
+has no link option to turn that off. The compiler proper (cc1, cc1plus,
+lto1) therefore restarts itself once with address randomisation disabled
+for its own process, which macOS allows through posix_spawn.
+
+diff --git a/gcc/main.c b/gcc/main.c
+index b1ffe1b1d..e4a6278b7 100644
+--- a/gcc/main.c
++++ b/gcc/main.c
+@@ -17,6 +17,19 @@ You should have received a copy of the GNU General Public License
+ along with GCC; see the file COPYING3.  If not see
+ <http://www.gnu.org/licenses/>.  */
+ 
++#if defined (__APPLE__) && defined (__aarch64__)
++/* Before the GCC headers, which redefine names these use.  */
++#include <crt_externs.h>
++#include <limits.h>
++#include <spawn.h>
++#include <stdint.h>
++#include <stdlib.h>
++
++/* From <mach-o/dyld.h>, whose struct section clashes with GCC's.  */
++extern "C" intptr_t _dyld_get_image_vmaddr_slide (uint32_t);
++extern "C" int _NSGetExecutablePath (char *, uint32_t *);
++#endif
++
+ #include "config.h"
+ #include "system.h"
+ #include "coretypes.h"
+@@ -26,6 +39,42 @@ along with GCC; see the file COPYING3.  If not see
+ 
+ int main (int argc, char **argv);
+ 
++#if defined (__APPLE__) && defined (__aarch64__)
++#ifndef _POSIX_SPAWN_DISABLE_ASLR
++#define _POSIX_SPAWN_DISABLE_ASLR 0x0100
++#endif
++
++/* A precompiled header can only be loaded at the address it was saved from.
++   arm64 macOS loads every program at a random address and offers no way to
++   link without that, so start again with the randomisation switched off.  */
++
++static void
++darwin_restart_without_aslr (char **argv)
++{
++  static const char guard[] = "GCC_DARWIN_ASLR_RESTART";
++  char path[PATH_MAX];
++  uint32_t size = sizeof (path);
++  posix_spawnattr_t attr;
++
++  if (_dyld_get_image_vmaddr_slide (0) == 0)
++    {
++      unsetenv (guard);
++      return;
++    }
++  /* Set by the attempt that led here: do not try again.  */
++  if (getenv (guard) != NULL
++      || _NSGetExecutablePath (path, &size) != 0
++      || setenv (guard, "1", 1) != 0
++      || posix_spawnattr_init (&attr) != 0)
++    return;
++  if (posix_spawnattr_setflags (&attr, POSIX_SPAWN_SETEXEC
++				       | _POSIX_SPAWN_DISABLE_ASLR) == 0)
++    posix_spawn (NULL, path, NULL, &attr, argv, *_NSGetEnviron ());
++  /* Only reached when the restart failed.  */
++  posix_spawnattr_destroy (&attr);
++}
++#endif
++
+ /* We define main() to call toplev::main(), which is defined in toplev.c.
+    We do this in a separate file in order to allow the language front-end
+    to define a different main(), if it so desires.  */
+@@ -33,6 +82,9 @@ int main (int argc, char **argv);
+ int
+ main (int argc, char **argv)
+ {
++#if defined (__APPLE__) && defined (__aarch64__)
++  darwin_restart_without_aslr (argv);
++#endif
+   toplev toplev (NULL, /* external_timer */
+ 		 true /* init_signals */);
+ 
