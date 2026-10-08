@@ -82,8 +82,8 @@ release takes the next `n`.
    release. A tag that contains `rc`, such as `10.3.0-esphome.4-rc1`, becomes
    a prerelease, unless the release was created by hand before the build
    finished; the build then only uploads the files to it.
-3. Point ESPHome at it: in `esphome/arduino8266/framework.py` set
-   `TOOLCHAIN_VERSION` to the tag and, for every host in `TOOLCHAIN_BUILDS`,
+3. Point ESPHome at it: in the ESPHome repository (`esphome/esphome`), in
+   `esphome/arduino8266/framework.py` set `TOOLCHAIN_VERSION` to the tag and, for every host in `TOOLCHAIN_BUILDS`,
    the sha256 and the size in bytes of its archive. This prints both for
    every host:
 
