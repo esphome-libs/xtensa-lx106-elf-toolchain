@@ -154,10 +154,14 @@ jobs:
           mkdir registry toolchain
           tar -xzf registry.tar.gz -C registry
           tar -xzf toolchain-xtensa-lx106-elf-*-linux_x86_64.tar.gz -C toolchain
-      - name: Checksums from the registry compiler
-        run: ci/verify.sh registry reference.sha256
       - name: Compare device libraries and headers
         run: ci/compare-device.sh registry toolchain
+      # Our device libraries differ on purpose (ci/device-changes.txt), so the
+      # reference links the registry compiler's output against them
+      - name: Checksums from the registry compiler
+        run: |
+          cp -R toolchain/xtensa-lx106-elf/lib toolchain/xtensa-lx106-elf/include registry/xtensa-lx106-elf/
+          ci/verify.sh registry reference.sha256
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: reference
