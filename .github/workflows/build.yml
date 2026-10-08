@@ -214,6 +214,8 @@ jobs:
         run: ci/verify.sh toolchain result.sha256
       - name: Compare with registry compiler
         run: diff reference.sha256 result.sha256
+      - name: Check section attributes in templates
+        run: ci/check-template-sections.sh toolchain
 
   release:
     name: Release

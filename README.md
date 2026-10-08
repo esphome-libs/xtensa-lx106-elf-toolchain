@@ -51,12 +51,14 @@ libc and the `sys/pgmspace.h` header.
 
 ## Changes from the registry package
 
-Two newlib changes save about 400 bytes of RAM on ESP8266; everything else matches the registry package.
+Two newlib changes save about 400 bytes of RAM on ESP8266, and one compiler fix makes section attributes work inside templates; everything else matches the registry package.
 
 | Change | Symbol | RAM |
 |---|---|---|
 | `--enable-newlib-global-atexit` moves the 32 entry atexit table out of the reent struct, into an object nothing links | `impure_data` | 240 to 96 B |
 | `patches/newlib/newlib-locale-c-only-buffers.patch` sizes the locale name buffers for the `"C"` and `"ASCII"` that a build without `_MB_CAPABLE` stores | `__global_locale` | 364 to 104 B |
+
+`patches/gcc/gcc-template-section-attribute.patch` backports GCC commit ea7bebff7cc5 (PR c++/70435, GCC 14). GCC 10 ignored `section(...)` on template instantiations, so `PROGMEM` data and `IRAM_ATTR` code inside templates silently stayed in RAM and flash; with the patch they land in the requested section. `ci/check-template-sections.sh` checks it on every build. The Arduino linker script already moved `PSTR()` strings from templates to flash, so those are unchanged.
 
 ESPHome's ESP8266 builds take libc and its headers from this toolchain; the Arduino core (3.1.2) ships no newlib headers, and its `libc_orig.a` is not linked. The prebuilt libraries in the Arduino core only reach the reent struct for `stdin`, `stdout` and `stderr`, which keep their offsets.
 

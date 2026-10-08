@@ -1,0 +1,27 @@
+Apply section attributes to template instantiations, so PROGMEM data and IRAM_ATTR code inside
+templates land in the requested section instead of the default one.
+Backport of GCC commit ea7bebff7cc5a5eb780a6ca646cb77cad1b625d6 (PR c++/70435, PR c++/88061, GCC 14),
+adapted to GCC 10, where set_decl_section_name takes the section name string.
+
+diff --git a/gcc/cp/pt.c b/gcc/cp/pt.c
+index d329c0128..265b68960 100644
+--- a/gcc/cp/pt.c
++++ b/gcc/cp/pt.c
+@@ -14001,6 +14001,8 @@ tsubst_function_decl (tree t, tree args, tsubst_flags_t complain,
+ 	= remove_attribute ("visibility", DECL_ATTRIBUTES (r));
+     }
+   determine_visibility (r);
++  if (DECL_SECTION_NAME (t))
++    set_decl_section_name (r, DECL_SECTION_NAME (t));
+   if (DECL_DEFAULTED_OUTSIDE_CLASS_P (r)
+       && !processing_template_decl)
+     defaulted_late_check (r);
+@@ -14736,6 +14738,8 @@ tsubst_decl (tree t, tree args, tsubst_flags_t complain)
+ 		  = remove_attribute ("visibility", DECL_ATTRIBUTES (r));
+ 	      }
+ 	    determine_visibility (r);
++	    if ((!local_p || TREE_STATIC (t)) && DECL_SECTION_NAME (t))
++	      set_decl_section_name (r, DECL_SECTION_NAME (t));
+ 	  }
+ 
+ 	if (!local_p)
