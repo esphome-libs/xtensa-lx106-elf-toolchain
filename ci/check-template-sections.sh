@@ -23,6 +23,7 @@ check() { # <section> <symbol pattern>
 }
 check '\.irom\.text\.template_data' '_ZZN5TableIiE3getEvE6values'
 check '\.iram\.text\.template_func' '_Z5twiceIiET_S0_'
+check '\.irom\.text\.template_member' '_ZN6MemberIiE6valuesE'
 if [ $status -ne 0 ]; then
   echo "$symbols"
 fi

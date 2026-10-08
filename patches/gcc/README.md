@@ -17,6 +17,14 @@ Many of them are commits from GCC itself or from
 [jcmvbkbc/gcc-xtensa](https://github.com/jcmvbkbc/gcc-xtensa); those name their
 author in the patch header.
 
+## Local patches
+
+These are not from esp-quick-toolchain; keep them when re-syncing from there.
+
+- `gcc-template-section-attribute.patch`: backport of GCC commit
+  `ea7bebff7cc5` (PR c++/70435, GCC 14) so section attributes reach template
+  instantiations
+
 ## License
 
 The patches modify GCC and are covered by GCC's license, the GNU General
