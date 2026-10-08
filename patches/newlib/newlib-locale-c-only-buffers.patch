@@ -1,5 +1,5 @@
 Size the locale name buffers for what a build without _MB_CAPABLE stores.
-The global locale shrinks from 364 to about 104 bytes of RAM on ESP8266.
+The global locale shrinks from 364 to 104 bytes of RAM on ESP8266.
 
 --- a/newlib/libc/locale/setlocale.h
 +++ b/newlib/libc/locale/setlocale.h
