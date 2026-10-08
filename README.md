@@ -62,8 +62,30 @@ ESPHome's ESP8266 builds take libc and its headers from this toolchain; the Ardu
 
 ## Releases
 
-Pushing a tag builds every host and publishes the archives with their
-checksums as a release. A tag that contains `rc` becomes a prerelease.
+Versions are `<gcc version>-esphome.<n>`, for example `10.3.0-esphome.3`; each
+release takes the next `n`.
+
+1. Changes land on `main` through pull requests. CI builds all five hosts,
+   compares the device libraries with the registry package (intended
+   differences are listed in `ci/device-changes.txt`) and checks that the
+   compiler output matches the registry compiler. All of it must pass.
+2. After merging, tag the merged commit and push the tag:
+
+   ```sh
+   git fetch origin
+   git tag 10.3.0-esphome.4 origin/main
+   git push origin 10.3.0-esphome.4
+   ```
+
+   The tag build publishes the five archives and `sha256sums.txt` as a
+   release. A tag that contains `rc` becomes a prerelease.
+3. Point ESPHome at it: in `esphome/arduino8266/framework.py` set
+   `TOOLCHAIN_VERSION` to the tag and, for every host in `TOOLCHAIN_BUILDS`,
+   the sha256 and the size in bytes of its archive. The hashes are in
+   `sha256sums.txt`; the sizes come from
+   `gh release view <tag> --repo esphome-libs/xtensa-lx106-elf-toolchain --json assets`.
+   ESPHome checks both when it downloads, so build an ESP8266 config before
+   opening the pull request.
 
 ## License
 
