@@ -58,7 +58,7 @@ Two newlib changes save about 400 bytes of RAM on ESP8266; everything else match
 | `--enable-newlib-global-atexit` moves the 32 entry atexit table out of the reent struct, into an object nothing links | `impure_data` | 240 to 96 B |
 | `patches/newlib/newlib-locale-c-only-buffers.patch` sizes the locale name buffers for the `"C"` and `"ASCII"` that a build without `_MB_CAPABLE` stores | `__global_locale` | 364 to about 104 B |
 
-The prebuilt libraries in the Arduino core only reach the reent struct for `stdin`, `stdout` and `stderr`, which keep their offsets.
+ESPHome's ESP8266 builds take libc and its headers from this toolchain; the Arduino core (3.1.2) ships no newlib headers, and its `libc_orig.a` is not linked. The prebuilt libraries in the Arduino core only reach the reent struct for `stdin`, `stdout` and `stderr`, which keep their offsets.
 
 ## Releases
 
