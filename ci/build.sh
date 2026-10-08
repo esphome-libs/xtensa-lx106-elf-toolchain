@@ -114,6 +114,8 @@ CONFIGURE_NEWLIB=(
   --disable-newlib-supplied-syscalls
   --enable-newlib-nano-formatted-io
   --enable-newlib-reent-small
+  # The atexit table moves out of the reent struct into an object nothing links
+  --enable-newlib-global-atexit
   --enable-target-optspace
   --disable-option-checking
   --target=xtensa-lx106-elf
