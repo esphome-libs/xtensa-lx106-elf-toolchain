@@ -10,7 +10,7 @@ The global locale shrinks from 364 to about 104 bytes of RAM on ESP8266.
 +#ifdef _MB_CAPABLE
    char			 categories[_LC_LAST][ENCODING_LEN + 1];
 +#else
-+  /* Without _MB_CAPABLE only "C" is ever stored and nothing reads it back.  */
++  /* Without _MB_CAPABLE every entry is always "C".  */
 +  char			 categories[_LC_LAST][2];
 +#endif
    int			(*wctomb) (struct _reent *, char *, wchar_t,
