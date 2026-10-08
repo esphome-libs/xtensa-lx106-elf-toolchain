@@ -85,6 +85,7 @@ done
 
 apply_patches "$SRC/gcc" "$ROOT"/patches/gcc/gcc-*.patch
 apply_patches "$SRC/gcc" "$ROOT"/patches/host/gcc-*.patch
+apply_patches "$SRC/newlib" "$ROOT"/patches/newlib/newlib-*.patch
 
 # Force the lx106 core definition into binutils and gcc
 for ow in "$SRC/gcc/include/xtensa-config.h" "$SRC/binutils/include/xtensa-config.h"; do

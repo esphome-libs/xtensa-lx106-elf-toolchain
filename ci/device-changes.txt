@@ -1,0 +1,46 @@
+# Device library members and headers that differ from the registry package on
+# purpose, one "<archive or header dir> <member or file>" per line. See the
+# "Changes from the registry package" section of README.md.
+xtensa-lx106-elf/include newlib.h
+xtensa-lx106-elf/lib/libc.a lib_a-__atexit.o
+xtensa-lx106-elf/lib/libc.a lib_a-__call_atexit.o
+xtensa-lx106-elf/lib/libc.a lib_a-btowc.o
+xtensa-lx106-elf/lib/libc.a lib_a-findfp.o
+xtensa-lx106-elf/lib/libc.a lib_a-fwalk.o
+xtensa-lx106-elf/lib/libc.a lib_a-impure.o
+xtensa-lx106-elf/lib/libc.a lib_a-l64a.o
+xtensa-lx106-elf/lib/libc.a lib_a-locale.o
+xtensa-lx106-elf/lib/libc.a lib_a-localeconv.o
+xtensa-lx106-elf/lib/libc.a lib_a-mbrtowc.o
+xtensa-lx106-elf/lib/libc.a lib_a-mbstowcs_r.o
+xtensa-lx106-elf/lib/libc.a lib_a-mbtowc_r.o
+xtensa-lx106-elf/lib/libc.a lib_a-nl_langinfo.o
+xtensa-lx106-elf/lib/libc.a lib_a-reent.o
+xtensa-lx106-elf/lib/libc.a lib_a-strsignal.o
+xtensa-lx106-elf/lib/libc.a lib_a-strtok.o
+xtensa-lx106-elf/lib/libc.a lib_a-wcrtomb.o
+xtensa-lx106-elf/lib/libc.a lib_a-wcsnrtombs.o
+xtensa-lx106-elf/lib/libc.a lib_a-wcstombs_r.o
+xtensa-lx106-elf/lib/libc.a lib_a-wctob.o
+xtensa-lx106-elf/lib/libc.a lib_a-wctomb_r.o
+xtensa-lx106-elf/lib/libg.a lib_a-__atexit.o
+xtensa-lx106-elf/lib/libg.a lib_a-__call_atexit.o
+xtensa-lx106-elf/lib/libg.a lib_a-btowc.o
+xtensa-lx106-elf/lib/libg.a lib_a-findfp.o
+xtensa-lx106-elf/lib/libg.a lib_a-fwalk.o
+xtensa-lx106-elf/lib/libg.a lib_a-impure.o
+xtensa-lx106-elf/lib/libg.a lib_a-l64a.o
+xtensa-lx106-elf/lib/libg.a lib_a-locale.o
+xtensa-lx106-elf/lib/libg.a lib_a-localeconv.o
+xtensa-lx106-elf/lib/libg.a lib_a-mbrtowc.o
+xtensa-lx106-elf/lib/libg.a lib_a-mbstowcs_r.o
+xtensa-lx106-elf/lib/libg.a lib_a-mbtowc_r.o
+xtensa-lx106-elf/lib/libg.a lib_a-nl_langinfo.o
+xtensa-lx106-elf/lib/libg.a lib_a-reent.o
+xtensa-lx106-elf/lib/libg.a lib_a-strsignal.o
+xtensa-lx106-elf/lib/libg.a lib_a-strtok.o
+xtensa-lx106-elf/lib/libg.a lib_a-wcrtomb.o
+xtensa-lx106-elf/lib/libg.a lib_a-wcsnrtombs.o
+xtensa-lx106-elf/lib/libg.a lib_a-wcstombs_r.o
+xtensa-lx106-elf/lib/libg.a lib_a-wctob.o
+xtensa-lx106-elf/lib/libg.a lib_a-wctomb_r.o
