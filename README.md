@@ -89,7 +89,7 @@ release takes the next `n`.
 
    ```sh
    gh release view 10.3.0-esphome.4 --repo esphome-libs/xtensa-lx106-elf-toolchain \
-     --json assets --jq '.assets[] | select(.name | endswith(".tar.gz")) | "\(.name) \(.digest) \(.size)"'
+     --json assets --jq '.assets[] | select(.name | endswith(".tar.gz")) | "\(.name) \(.digest | ltrimstr("sha256:")) \(.size)"'
    ```
 
    ESPHome checks both when it downloads, so build an ESP8266 config before
